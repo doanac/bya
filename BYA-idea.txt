@@ -1,0 +1,117 @@
+Build Your Artifacts
+====================
+
+Basic idea is to create a simple build system that takes advantage of remote
+hosts running builds under containers. There are few key principles:
+ - simple as possible data-model (on disk)
+ - stateless (no constant connections needed)
+ - pull not push oriented (no instant feedback, but ...
+ - you get scale and HA because of these ideas
+
+BYA other ideas:
+ - jobs maintained in Git, there's no GUI editor
+ - GUI is mostly read-only to show live-status and job results
+ - triggers are run external and kick off jobs via an API. ie no giant daemon
+   with internal state. Another server could easily become ACTIVE with no
+   data to pass around
+
+
+Job Definition
+--------------
+Each "build" is defined by a job definition which is YAML like:
+
+ description: Example Job To Explain
+ timeout: 5  # time in minutes to let job run before failing
+ archive: true  # anything under jobs "archive" directory is saved
+ containers:
+  - image: ubuntu
+    host_tag: amd64  # optional
+  - image: docker.linaro.org/ubuntu
+    host_tag: aarch64  # optional
+ params:
+   # params become environment variables in the job script
+   - name: git_branch
+     description: optional to describe parameter
+     choices: #optional to limit inputs (default is first item)
+       - master
+       - v2
+   - name: foobar
+ secrets:
+   - SERVICE_FOO_TOKEN  # see secrets.yml below
+ script: |
+   # the contents are executed under a bash shell
+   git clone https://myrepo.com/repo
+   cd repo
+   git checkout ${git_branch}
+   make
+   make test
+   echo param foobar=${foobar}
+   echo "IT WORKS" > $ARCHIVE_ROOT/artifact.txt
+   curl $SERVICE_FOO_TOKEN blah
+
+Jobs are then started via a REST API which takes the parameters
+  job_name, runs(a matrix of containers and parameters)
+
+For example to kick off an intel only build of the above you might:
+
+  start_job('example_job', [
+    {'name': 'xenial-master', 'container': 'ubuntu',
+      params={'git_branch': 'master', 'foobar': 'blah'})
+    }
+  ])
+
+Or do a few runs:
+  start_job('example_job', [
+    {'name': 'amd64 master', 'container': 'ubuntu',
+      params={'git_branch': 'master', 'foobar': 'blah'})
+    },
+    {'name': 'amd64 v2', 'container': 'ubuntu',
+      params={'git_branch': 'v2', 'foobar': 'blah'})
+    },
+    {'name': 'aarch64 master', 'container': 'docker.linaro.org/ubuntu',
+      params={'git_branch': 'master', 'foobar': 'blah'})
+    }
+  ])
+
+Data Model / Layout
+-------------------
+
+ # BYA root, say /srv/bya
+ secrets.yml
+   # this is place to store things like secret keys/credentials
+   # simply a list of:
+   - key: SERVICE_FOO_TOKEN
+     val: Password1
+   - key: BLAH
+     val: password
+
+ job-defs/*.yml
+   - this is a git clone of the job defs, a cron job will pull in updates, and
+     a git hook will help remove deleted jobs from below.
+ builds/  # where results of a run are stored
+   jobx/
+     1/  # build number 1
+       summary.log
+       status  # QUEUED|RUNNING|PASSED|FAILED
+       runs/
+         amd64 master/
+	   container
+	   params
+           artifacts
+           console.log
+	   passed | failed
+         aarch64 master/
+	   container
+	   params
+           artifacts
+           console.log
+	   passed | failed
+
+How A Job Is Run
+----------------
+
+TODO
+   - use a onetime-key in job to grab BYA API token for
+     streaming logs and storing artifacts
+  build script to run
+  publish
