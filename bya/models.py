@@ -17,6 +17,39 @@ class ModelError(Exception):
         self.status_code = code
 
 
+class RunQueue(object):
+    @staticmethod
+    def push(run, host_tag):
+        qname = '%s#%f' % (host_tag, datetime.datetime.now().timestamp())
+        qlen = len(os.listdir(settings.QUEUE_DIR))
+        os.symlink(run.run_dir, os.path.join(settings.QUEUE_DIR, qname))
+        run.append_log('# Queued as: %s. %d Runs waiting in front\n' % (
+                       qname, qlen))
+
+    @staticmethod
+    def take(host, host_tags):
+        '''Find the first queued run that matches one of the host tags'''
+        oldest = None
+        if os.path.exists(settings.QUEUE_DIR):
+            for e in os.scandir(settings.QUEUE_DIR):
+                tag, ts = e.name.split('#', 1)
+                ts = float(ts)
+                if tag == '*' or tag in host_tags:
+                    if not oldest or ts < oldest[1]:
+                        oldest = (e, ts)
+        if oldest:
+            try:
+                run = os.path.join(
+                    settings.QUEUE_DIR, os.readlink(oldest[0].path))
+                os.unlink(oldest[0].path)
+            except FileNotFoundError:
+                log.error('Unexpected race condition handling: %s', run.path)
+                return
+            run = Run(os.path.basename(run), run)
+            run.append_log('# Dequeued to: %s\n' % host)
+            return run
+
+
 class Run(object):
     QUEUED = 'QUEUED'
     UNKNOWN = 'UNKNOWN'
@@ -41,12 +74,8 @@ class Run(object):
             for k, v in params.items():
                 f.write('%s=%s\n' % (k, v))
 
-        qname = '%s#%f' % (host_tag, datetime.datetime.now().timestamp())
-        qlen = len(os.listdir(settings.QUEUE_DIR))
-        os.symlink(path, os.path.join(settings.QUEUE_DIR, qname))
         r = cls(name, path)
-        r.append_log('# Queued as: %s. %d Runs waiting in front\n' % (
-                     qname, qlen))
+        RunQueue.push(r, host_tag)
         return r
 
     def __init__(self, name, run_dir):

@@ -7,7 +7,7 @@ import unittest
 import yaml
 
 from bya import settings
-from bya.models import Build, JobDefinition, JobGroup, Run
+from bya.models import Build, JobDefinition, JobGroup, Run, RunQueue
 
 
 class TempDirTest(unittest.TestCase):
@@ -82,7 +82,28 @@ class TestRun(ModelTest):
         with self.assertRaises(ValueError):
             r.set_status('BAD')
 
-    # TODO test this run-queue idea
+    def test_queue(self):
+        params = {'foo': 'bar', 'bam': 'BAM'}
+        Run.create(self.tempdir, 'run_foo', 'container_foo', 'tag', params)
+        Run.create(self.tempdir, 'run_bar', 'container_foo', 'tag', params)
+        Run.create(self.tempdir, 'run_X', 'container_foo', 'tag2', params)
+
+        self.assertIsNone(RunQueue.take('host1', ['nosuchtags']))
+
+        # not the oldest run, but matches the tag
+        r = RunQueue.take('host1', ['tag2'])
+        self.assertEqual('run_X', r.name)
+
+        r = RunQueue.take('host2', ['tag'])
+        self.assertEqual('run_foo', r.name)
+
+        r = RunQueue.take('host1', ['tag'])
+        self.assertEqual('run_bar', r.name)
+        with r.log_fd() as f:
+            self.assertIn('# Dequeued to: host1', f.read())
+
+        # empty queue now
+        self.assertIsNone(RunQueue.take('host2', ['tag']))
 
 
 class TestBuild(TempDirTest):
