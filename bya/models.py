@@ -1,6 +1,5 @@
 import datetime
 import functools
-import json
 import os
 
 from operator import attrgetter
@@ -8,6 +7,7 @@ from operator import attrgetter
 import yaml
 
 from bya import settings
+from bya.lazy import PropsDir
 
 log = settings.get_logger()
 
@@ -439,27 +439,25 @@ class JobGroup(object):
 jobs = JobGroup()
 
 
-class Host(object):
+class Host(PropsDir):
+    PROPS = (
+        ('distro', lambda x: type(x) == str, True),
+        ('mem_total', lambda x: type(x) == int, True),
+        ('cpu_total', lambda x: type(x) == int, True),
+        ('cpu_type', lambda x: type(x) == str, True),
+        ('enlisted', lambda x: type(x) == bool, False),
+        ('api_key', lambda x: type(x) == str, False),
+    )
+
     @staticmethod
     def list():
         for entry in os.scandir(settings.HOSTS_DIR):
-            if entry.is_file() and entry.name.endswith('.json'):
-                with open(entry.path) as f:
-                    yield Host(entry.name, json.load(f))
+            if entry.is_dir():
+                yield Host(entry.path)
 
     @staticmethod
     def get(name):
-        path = os.path.join(settings.HOSTS_DIR, name + '.json')
+        path = os.path.join(settings.HOSTS_DIR, name)
         if not os.path.exists(path):
             raise ModelError('Host(%s) does not exist' % name, 404)
-        with open(path) as f:
-            return Host(name, json.load(f))
-
-    def __init__(self, name, props):
-        self.name = name
-        self.distro = props['distro']
-        self.mem_total = props['mem_total']
-        self.cpu_total = props['cpu_total']
-        self.cpu_type = props['cpu_type']
-        self.enlisted = props.get('enlisted')
-        self.api_key = props.get('api_key')
+        return Host(path)

@@ -1,4 +1,3 @@
-import json
 import os
 import tempfile
 import shutil
@@ -272,22 +271,15 @@ class TestAll(ModelTest):
 class HostTest(ModelTest):
     def setUp(self):
         super(HostTest, self).setUp()
-        with open(os.path.join(settings.HOSTS_DIR, 'host1.json'), 'w') as f:
-            props = {
-                'distro': 'ubuntu',
-                'mem_total': 10,
-                'cpu_total': 2,
-                'cpu_type': 'x86',
-            }
-            json.dump(props, f)
-        with open(os.path.join(settings.HOSTS_DIR, 'host2.json'), 'w') as f:
-            props = {
-                'distro': 'debian',
-                'mem_total': 10,
-                'cpu_total': 2,
-                'cpu_type': 'aarch64',
-            }
-            json.dump(props, f)
+        props = {
+            'distro': 'ubuntu',
+            'mem_total': 10,
+            'cpu_total': 2,
+            'cpu_type': 'x86',
+        }
+        Host.create(os.path.join(settings.HOSTS_DIR, 'host1'), props)
+        props['cpu_type'] = 'aarch64'
+        Host.create(os.path.join(settings.HOSTS_DIR, 'host2'), props)
 
     def test_list(self):
         hosts = [x.name for x in Host.list()]

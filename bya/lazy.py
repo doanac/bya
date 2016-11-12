@@ -67,3 +67,13 @@ class PropsDir(PropsFile):
 
     def open_file(self, name, mode='r'):
         return open(os.path.join(self.path, name), mode)
+
+    @classmethod
+    def create(clazz, path, data):
+        errs = clazz.validate(data)
+        if errs:
+            return errs
+        if not os.path.exists(path):
+            os.mkdir(path)
+        with open(os.path.join(path, 'props'), 'w') as f:
+            json.dump(data, f)
