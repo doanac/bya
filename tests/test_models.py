@@ -7,7 +7,7 @@ import unittest
 import yaml
 
 from bya import settings
-from bya.models import Build, JobDefinition, JobGroup, Run, RunQueue
+from bya.models import Build, JobDefinition, JobGroup, Run, RunQueue, jobs
 
 
 class TempDirTest(unittest.TestCase):
@@ -104,6 +104,15 @@ class TestRun(ModelTest):
 
         # empty queue now
         self.assertIsNone(RunQueue.take('host2', ['tag']))
+
+    def test_full_run(self):
+        jobname = 'jobname_foo'
+        self._write_job(jobname, self.jobdef)
+        j = jobs.find_jobdef(jobname)
+        j.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        d = RunQueue.take('host1', ['tag']).get_rundef()
+        self.assertEqual(self.jobdef['timeout'], d['timeout'])
+        self.assertEqual(self.jobdef['script'], d['script'])
 
 
 class TestBuild(TempDirTest):

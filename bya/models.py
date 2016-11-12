@@ -124,6 +124,19 @@ class Run(object):
     def log_fd(self, mode='r'):
         return open(os.path.join(self.run_dir, 'console.log'), mode)
 
+    def get_rundef(self):
+        builds = os.path.abspath(os.path.join(self.run_dir, '../..'))
+        jobname = os.path.basename(os.path.dirname(builds))
+        jobdef = jobs.find_jobdef(jobname.replace('#', '/'))
+
+        steps = {
+            'container': self.container,
+            'params': self.params,
+            'timeout': jobdef.timeout,
+            'script': jobdef.script,
+        }
+        return steps
+
 
 class Build(object):
     QUEUED = 'QUEUED'
@@ -289,9 +302,9 @@ class JobDefinition(object):
         # don't wind sharing directory space
         name = self.name
         if self.jobgroup:
-            name = self.jobgroup.name.replace('/', '#')
-            if name:
-                name += '#'
+            n = self.jobgroup.name.replace('/', '#')
+            if n:
+                name = n + '#' + name
         return os.path.join(settings.BUILDS_DIR, name)
 
     def get_last_build(self):
