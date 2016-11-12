@@ -1,5 +1,6 @@
 import datetime
 import functools
+import json
 import os
 
 from operator import attrgetter
@@ -436,3 +437,29 @@ class JobGroup(object):
         raise ModelError('JobDefinition(%s) not found' % path, 404)
 
 jobs = JobGroup()
+
+
+class Host(object):
+    @staticmethod
+    def list():
+        for entry in os.scandir(settings.HOSTS_DIR):
+            if entry.is_file() and entry.name.endswith('.json'):
+                with open(entry.path) as f:
+                    yield Host(entry.name, json.load(f))
+
+    @staticmethod
+    def get(name):
+        path = os.path.join(settings.HOSTS_DIR, name + '.json')
+        if not os.path.exists(path):
+            raise ModelError('Host(%s) does not exist' % name, 404)
+        with open(path) as f:
+            return Host(name, json.load(f))
+
+    def __init__(self, name, props):
+        self.name = name
+        self.distro = props['distro']
+        self.mem_total = props['mem_total']
+        self.cpu_total = props['cpu_total']
+        self.cpu_type = props['cpu_type']
+        self.enlisted = props.get('enlisted')
+        self.api_key = props.get('api_key')

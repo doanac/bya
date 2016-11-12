@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import shutil
@@ -7,7 +8,9 @@ import unittest
 import yaml
 
 from bya import settings
-from bya.models import Build, JobDefinition, JobGroup, Run, RunQueue, jobs
+from bya.models import (
+    Build, Host, JobDefinition, JobGroup, ModelError, Run, RunQueue, jobs
+)
 
 
 class TempDirTest(unittest.TestCase):
@@ -23,6 +26,7 @@ class ModelTest(TempDirTest):
         self.jobsdir = settings.JOBS_DIR
         self.buildsdir = settings.BUILDS_DIR
         self.queuedir = settings.QUEUE_DIR
+        self.hostsdir = settings.HOSTS_DIR
 
         settings.JOBS_DIR = os.path.join(self.tempdir, 'jobs')
         os.mkdir(settings.JOBS_DIR)
@@ -30,6 +34,8 @@ class ModelTest(TempDirTest):
         os.mkdir(settings.BUILDS_DIR)
         settings.QUEUE_DIR = os.path.join(self.tempdir, 'run-queue')
         os.mkdir(settings.QUEUE_DIR)
+        settings.HOSTS_DIR = os.path.join(self.tempdir, 'hosts')
+        os.mkdir(settings.HOSTS_DIR)
 
         self.jobdef = {
             'description': 'test_simple',
@@ -43,6 +49,7 @@ class ModelTest(TempDirTest):
         settings.JOBS_DIR = self.jobsdir
         settings.BUILDS_DIR = self.buildsdir
         settings.QUEUE_DIR = self.queuedir
+        settings.HOSTS_DIR = self.hostsdir
 
     @staticmethod
     def _write_job(name, jobdef):
@@ -260,3 +267,33 @@ class TestAll(ModelTest):
         self.assertEqual('QUEUED', r.status)
         r.set_status('RUNNING')
         self.assertEqual('RUNNING', r.status)
+
+
+class HostTest(ModelTest):
+    def setUp(self):
+        super(HostTest, self).setUp()
+        with open(os.path.join(settings.HOSTS_DIR, 'host1.json'), 'w') as f:
+            props = {
+                'distro': 'ubuntu',
+                'mem_total': 10,
+                'cpu_total': 2,
+                'cpu_type': 'x86',
+            }
+            json.dump(props, f)
+        with open(os.path.join(settings.HOSTS_DIR, 'host2.json'), 'w') as f:
+            props = {
+                'distro': 'debian',
+                'mem_total': 10,
+                'cpu_total': 2,
+                'cpu_type': 'aarch64',
+            }
+            json.dump(props, f)
+
+    def test_list(self):
+        hosts = [x.name for x in Host.list()]
+        self.assertEqual(2, len(hosts))
+
+    def test_get(self):
+        with self.assertRaises(ModelError):
+            Host.get('bad name')
+        self.assertEqual('aarch64', Host.get('host2').cpu_type)

@@ -9,6 +9,7 @@ DEBUG = bool(int(DEBUG))
 JOBS_DIR = os.path.join(_here, '../../job-defs')
 BUILDS_DIR = os.path.join(_here, '../../builds')
 QUEUE_DIR = os.path.join(_here, '../../run-queue')
+HOSTS_DIR = os.path.join(_here, '../../hosts')
 
 
 def get_logger():
