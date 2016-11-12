@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 
 
 class PropsFile(object):
@@ -52,3 +53,17 @@ class PropsFile(object):
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.name)
+
+
+class PropsDir(PropsFile):
+    '''Same as a PropsFile but the object lives in a directory so other
+    artifacts can be stored with it'''
+
+    def __init__(self, path, loader=json.load):
+        fname = os.path.join(path, 'props')
+        name = os.path.basename(path)
+        super(PropsDir, self).__init__(name, fname, loader)
+        self.path = path
+
+    def open_file(self, name, mode='r'):
+        return open(os.path.join(self.path, name), mode)
