@@ -11,6 +11,7 @@ from bya.lazy import (
     Property,
     PropsDir,
     PropsFile,
+    StrChoiceProperty,
 )
 
 log = settings.get_logger()
@@ -21,7 +22,7 @@ class RunQueue(object):
     def push(run, host_tag):
         qname = '%s#%f' % (host_tag, datetime.datetime.now().timestamp())
         qlen = len(os.listdir(settings.QUEUE_DIR))
-        os.symlink(run.run_dir, os.path.join(settings.QUEUE_DIR, qname))
+        os.symlink(run.path, os.path.join(settings.QUEUE_DIR, qname))
         run.append_log('# Queued as: %s. %d Runs waiting in front\n' % (
                        qname, qlen))
 
@@ -44,17 +45,25 @@ class RunQueue(object):
             except FileNotFoundError:
                 log.error('Unexpected race condition handling: %s', run.path)
                 return
-            run = Run(os.path.basename(run), run)
+            run = Run(run)
             run.append_log('# Dequeued to: %s\n' % host)
             return run
 
 
-class Run(object):
+class Run(PropsDir):
     QUEUED = 'QUEUED'
     UNKNOWN = 'UNKNOWN'
     RUNNING = 'RUNNING'
     PASSED = 'PASSED'
     FAILED = 'FAILED'
+
+    PROPS = (
+        Property('container', str),
+        Property('host_tag', str),
+        Property('params', dict, required=False),
+        StrChoiceProperty('status',
+                          (UNKNOWN, QUEUED, RUNNING, PASSED, FAILED), QUEUED),
+    )
 
     @classmethod
     def create(cls, build_dir, name, container, host_tag, params):
@@ -65,66 +74,22 @@ class Run(object):
         os.mkdir(path)
         if not host_tag:
             host_tag = '*'
-        with open(os.path.join(path, 'container'), 'w') as f:
-            f.write(container)
-        with open(os.path.join(path, 'host_tag'), 'w') as f:
-            f.write(host_tag)
-        with open(os.path.join(path, 'params'), 'w') as f:
-            for k, v in params.items():
-                f.write('%s=%s\n' % (k, v))
 
-        r = cls(name, path)
+        data = {'container': container, 'host_tag': host_tag, 'params': params}
+        PropsDir.create(path, data)
+        r = cls(path)
         RunQueue.push(r, host_tag)
         return r
-
-    def __init__(self, name, run_dir):
-        self.name = name
-        self.run_dir = run_dir
-
-    def __repr__(self):
-        return 'Run(%s)' % (self.name)
-
-    def set_status(self, status):
-        if status not in (Run.QUEUED, Run.RUNNING, Run.PASSED, Run.FAILED):
-            raise ValueError('Invalid run status: %s' % status)
-        with open(os.path.join(self.run_dir, 'status'), 'w') as f:
-            f.write(status)
-
-    @property
-    def status(self):
-        try:
-            with open(os.path.join(self.run_dir, 'status')) as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            return self.QUEUED
-        except:
-            log.exception('unable to read job state')
-            return self.UNKNOWN
-
-    @property
-    def host_tag(self):
-        with open(os.path.join(self.run_dir, 'host_tag')) as f:
-            return f.read().strip()
-
-    @property
-    def container(self):
-        with open(os.path.join(self.run_dir, 'container')) as f:
-            return f.read().strip()
-
-    @property
-    def params(self):
-        with open(os.path.join(self.run_dir, 'params')) as f:
-            return f.read().strip()
 
     def append_log(self, msg):
         with self.log_fd('a') as f:
             f.write(msg)
 
     def log_fd(self, mode='r'):
-        return open(os.path.join(self.run_dir, 'console.log'), mode)
+        return self.open_file('console.log', mode)
 
     def get_rundef(self):
-        builds = os.path.abspath(os.path.join(self.run_dir, '../..'))
+        builds = os.path.abspath(os.path.join(self.path, '../..'))
         jobname = os.path.basename(os.path.dirname(builds))
         jobdef = jobs.find_jobdef(jobname.replace('#', '/'))
 
@@ -200,7 +165,7 @@ class Build(object):
     def list_runs(self):
         for entry in os.scandir(os.path.join(self.build_dir, 'runs')):
             if entry.is_dir():
-                yield(Run(entry.name, entry.path))
+                yield(Run(entry.path))
 
     def __repr__(self):
         return 'Build(%d)' % self.number

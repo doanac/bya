@@ -72,8 +72,8 @@ class TestRun(ModelTest):
         r = Run.create(self.tempdir, 'run_foo', 'container_foo', '', params)
 
         self.assertEqual('container_foo', r.container)
-        self.assertIn('foo=bar', r.params)
-        self.assertIn('bam=BAM', r.params)
+        self.assertEqual('bar', r.params['foo'])
+        self.assertIn('BAM', r.params['bam'])
 
         r.append_log('hello world\n')
         r.append_log('hello world')
@@ -83,10 +83,11 @@ class TestRun(ModelTest):
     def test_status(self):
         params = {'foo': 'bar', 'bam': 'BAM'}
         r = Run.create(self.tempdir, 'run_foo', 'container_foo', '', params)
-        r.set_status('PASSED')
+        r.update(status='PASSED')
+        r = Run(r.path)
         self.assertEqual(r.PASSED, r.status)
-        with self.assertRaises(ValueError):
-            r.set_status('BAD')
+        with self.assertRaises(ModelError):
+            r.update(status='BAD')
 
     def test_queue(self):
         params = {'foo': 'bar', 'bam': 'BAM'}
@@ -225,7 +226,8 @@ class TestAll(ModelTest):
     def test_status(self):
         r = list(self.build.list_runs())[0]
         self.assertEqual('QUEUED', r.status)
-        r.set_status('RUNNING')
+        r.update(status='RUNNING')
+        r = Run(r.path)
         self.assertEqual('RUNNING', r.status)
 
 

@@ -28,6 +28,19 @@ class Property(object):
         return value
 
 
+class StrChoiceProperty(Property):
+    def __init__(self, name, vals, def_value=None):
+        self.vals = vals
+        super(StrChoiceProperty, self).__init__(
+            name, str, def_value, not def_value)
+
+    def validate(self, value):
+        if value not in self.vals:
+            raise ModelError(
+                'Property(%s) must be in: %r' % (self.name, self.vals), 400)
+        return value
+
+
 class PropsFile(object):
     '''Makes an easy way to build an object model based on a json/yaml file.
 
@@ -48,9 +61,9 @@ class PropsFile(object):
 
     @staticmethod
     def _prop(prop, self):
-        if isinstance(self._data, str):
+        if self._data is None:
             # lazy load the definition
-            with open(self._data) as f:
+            with open(self._file) as f:
                 self._data = self._loader(f)
         v = self._data.get(prop)
         if not v:
@@ -73,11 +86,20 @@ class PropsFile(object):
     def __init__(self, name, props_file, loader=json.load):
         self._class_init()
         self.name = name
-        self._data = props_file
+        self._file = props_file
+        self._data = None
         self._loader = loader
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.name)
+
+    def update(self, **kwargs):
+        with open(self._file) as f:
+            orig = self._loader(f)
+        orig.update(kwargs)
+        self.validate(orig)
+        with open(self._file, 'w') as f:
+            json.dump(orig, f)
 
 
 class PropsDir(PropsFile):
