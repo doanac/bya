@@ -135,95 +135,57 @@ class TestValidator(ModelTest):
     def test_simple_pass(self):
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            self.assertEqual([], JobDefinition.validate(f))
-
-    def test_description(self):
-        """Ensure description is required."""
-        del self.jobdef['description']
-        p = self._write_job('name', self.jobdef)
-        with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(
-                ['Missing required attribute: "description".'], errors)
-
-    def test_script(self):
-        """Ensure script is required."""
-        del self.jobdef['script']
-        p = self._write_job('name', self.jobdef)
-        with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(['Missing required attribute: "script".'], errors)
-
-    def test_timeout(self):
-        """Ensure timeout is required and integer"""
-        del self.jobdef['timeout']
-        p = self._write_job('name', self.jobdef)
-        with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(
-                ['Missing required attribute: "timeout".'], errors)
-
-        self.jobdef['timeout'] = '5'
-        p = self._write_job('name', self.jobdef)
-        with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(['Invalid value for "timeout".'], errors)
+            JobDefinition.validate(yaml.load(f.read()))
 
     def test_containers(self):
         """Ensure containers are specified"""
         del self.jobdef['containers']
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(
-                ['Missing required attribute: "containers".'], errors)
+            msg = 'Missing required attribute: "containers".'
+            with self.assertRaisesRegex(ModelError, msg):
+                JobDefinition.validate(yaml.load(f.read()))
 
         self.jobdef['containers'] = [{'missing_image_attr': 'blah'}]
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(
-                ['Container ({\'missing_image_attr\': \'blah\'}) must include '
-                 'an "image" attribute'], errors)
+            msg = 'Container\(.*\) must include an "image" attribute'
+            with self.assertRaisesRegex(ModelError, msg):
+                JobDefinition.validate(yaml.load(f.read()))
 
     def test_params(self):
         """Ensure params are validated"""
         self.jobdef['params'] = [{'name': 'foo'}]
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(0, len(errors))
+            JobDefinition.validate(yaml.load(f.read()))
 
         self.jobdef['params'] = [{'lbah': 'foo'}]
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(1, len(errors))
-            self.assertEqual(
-                'Param ({\'lbah\': \'foo\'}) must include a "name" attribute',
-                errors[0])
+            msg = 'Param\(.*\) must include a "name" attribute'
+            with self.assertRaisesRegex(ModelError, msg):
+                JobDefinition.validate(yaml.load(f.read()))
 
     def test_create_build_noruns(self):
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(0, len(errors))
+            JobDefinition.validate(yaml.load(f.read()))
         job = self._load_job('name')
-        with self.assertRaisesRegex(ValueError, 'runs must be a non-empty'):
+        with self.assertRaisesRegex(ModelError, 'runs must be a non-empty'):
             job.create_build([])
 
     def test_create_build_badcontainer(self):
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(0, len(errors))
+            JobDefinition.validate(yaml.load(f.read()))
         job = self._load_job('name')
 
-        with self.assertRaisesRegex(ValueError, 'missing attribute "name"'):
+        with self.assertRaisesRegex(ModelError, 'missing attribute "name"'):
             job.create_build([{}])
-        with self.assertRaisesRegex(ValueError, 'ssing attribute "container"'):
+        with self.assertRaisesRegex(ModelError, 'ssing attribute "container"'):
             job.create_build([{'name': 'foo'}])
-        with self.assertRaisesRegex(ValueError, 'Container\(blah\) invalid'):
+        with self.assertRaisesRegex(ModelError, 'Container\(blah\) invalid'):
             job.create_build([{'name': 'foo', 'container': 'blah'}])
         job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
 
@@ -235,16 +197,15 @@ class TestValidator(ModelTest):
         ]
         p = self._write_job('name', self.jobdef)
         with open(p) as f:
-            errors = JobDefinition.validate(f)
-            self.assertEqual(0, len(errors))
+            JobDefinition.validate(yaml.load(f.read()))
         job = self._load_job('name')
 
-        with self.assertRaisesRegex(ValueError, 'required parameter: p3'):
+        with self.assertRaisesRegex(ModelError, 'required parameter: p3'):
             p = {'p1': '1'}  # missing p3
             job.create_build(
                 [{'name': 'foo', 'container': 'ubuntu', 'params': p}])
 
-        with self.assertRaisesRegex(ValueError, 'Invalid value for p1.'):
+        with self.assertRaisesRegex(ModelError, 'Invalid value for p1.'):
             p = {'p1': '3', 'p3': 'blah'}  # invalid choice
             job.create_build(
                 [{'name': 'foo', 'container': 'ubuntu', 'params': p}])

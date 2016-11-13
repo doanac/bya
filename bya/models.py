@@ -1,5 +1,4 @@
 import datetime
-import functools
 import os
 
 from operator import attrgetter
@@ -11,6 +10,7 @@ from bya.lazy import (
     ModelError,
     Property,
     PropsDir,
+    PropsFile,
 )
 
 log = settings.get_logger()
@@ -206,33 +206,37 @@ class Build(object):
         return 'Build(%d)' % self.number
 
 
-def _validate_containers_field(val):
-    if not val:
-        return True
-    if type(val) != list:
-        return '"containers" attribute must be a list'
-    for v in val:
-        if type(v) != dict:
-            return 'Container value(%s) must of type dict' % v
-        elif not v.get('image'):
-            return 'Container (%s) must include an "image" attribute' % v
-    return True
+class ContainersProp(Property):
+    def __init__(self):
+        super(ContainersProp, self).__init__('containers', list)
+
+    def validate(self, value):
+        value = super(ContainersProp, self).validate(value)
+        for v in value:
+            if type(v) != dict:
+                raise ModelError(
+                    'Container value(%s) must of type dict' % v, 400)
+            elif not v.get('image'):
+                raise ModelError(
+                    'Container(%s) must include an "image" attribute' % v, 400)
 
 
-def _validate_params_field(val):
-    if not val:
-        return True
-    if type(val) != list:
-        return '"params" attribute must be a list'
-    for v in val:
-        if type(v) != dict:
-            return 'Param value(%s) must of type dict' % v
-        elif not v.get('name'):
-            return 'Param (%s) must include a "name" attribute' % v
-    return True
+class ParamsProp(Property):
+    def __init__(self):
+        empty = []
+        super(ParamsProp, self).__init__('params', list, empty, False)
+
+    def validate(self, value):
+        value = super(ParamsProp, self).validate(value)
+        for v in value:
+            if type(v) != dict:
+                raise ModelError('Param value(%s) must of type dict' % v, 400)
+            elif not v.get('name'):
+                raise ModelError(
+                    'Param(%s) must include a "name" attribute' % v, 400)
 
 
-class JobDefinition(object):
+class JobDefinition(PropsFile):
     """Represents the definition of job that's managed by YAML files under
        settings.JOBS_DIR like:
          job1.yml
@@ -241,57 +245,19 @@ class JobDefinition(object):
                job1.yml
                job2.yml
     """
-    FIELDS = (
-        ('description', lambda x: type(x) == str, True),
-        ('timeout', lambda x: type(x) == int, True),
-        ('script', lambda x: type(x) == str, True),
-        ('containers', _validate_containers_field, True),
-        ('params', _validate_params_field, False),
+    PROPS = (
+        Property('description', str),
+        Property('timeout', int),
+        Property('script', str),
+        ContainersProp(),
+        ParamsProp(),
     )
-
-    @classmethod
-    def validate(clazz, stream):
-        data = yaml.load(stream)
-        errors = []
-        for attr, validator, required in clazz.FIELDS:
-            val = data.get(attr)
-            if not val and required:
-                errors.append('Missing required attribute: "%s".' % attr)
-            elif val:
-                r = validator(val)
-                if type(r) == str:
-                    errors.append(r)
-                elif not r:
-                    errors.append('Invalid value for "%s".' % attr)
-        return errors
-
-    @staticmethod
-    def _prop(prop, self):
-        if isinstance(self._data, str):
-            # lazy load the definition
-            with open(self._data) as f:
-                self._data = yaml.load(f)
-        return self._data.get(prop)
-
-    @classmethod
-    def _class_init(clazz):
-        # a clever way to give us lazy-loadable object properies
-        flag = clazz.__name__ + '_fields_set'
-        if getattr(clazz, flag, None):
-            return
-        attrs = ('description', 'script', 'timeout', 'containers',
-                 'params')
-        for a in attrs:
-            setattr(clazz, a, property(functools.partial(clazz._prop, a)))
-        setattr(clazz, flag, True)
 
     def __init__(self, jobgroup, name, jobfile):
         if '#' in name:
             raise ValueError(
                 'Illegal job name(%s). Must not contain #' % name)
-        self._class_init()
-        self.name = name
-        self._data = jobfile
+        super(JobDefinition, self).__init__(name, jobfile, yaml.load)
         self.jobgroup = jobgroup
 
     def _get_builds_dir(self):
@@ -375,7 +341,7 @@ class JobDefinition(object):
         else:
             errors.append('runs must be a non-empty list')
         if errors:
-            raise ValueError('\n'.join(errors))
+            raise ModelError('\n'.join(errors), 400)
 
     def create_build(self, runs):
         self._validate_runs(runs)
