@@ -7,15 +7,13 @@ from operator import attrgetter
 import yaml
 
 from bya import settings
-from bya.lazy import PropsDir
+from bya.lazy import (
+    ModelError,
+    Property,
+    PropsDir,
+)
 
 log = settings.get_logger()
-
-
-class ModelError(Exception):
-    def __init__(self, msg, code=500):
-        super(ModelError, self).__init__(msg)
-        self.status_code = code
 
 
 class RunQueue(object):
@@ -441,12 +439,12 @@ jobs = JobGroup()
 
 class Host(PropsDir):
     PROPS = (
-        ('distro', lambda x: type(x) == str, True),
-        ('mem_total', lambda x: type(x) == int, True),
-        ('cpu_total', lambda x: type(x) == int, True),
-        ('cpu_type', lambda x: type(x) == str, True),
-        ('enlisted', lambda x: type(x) == bool, False),
-        ('api_key', lambda x: type(x) == str, False),
+        Property('distro', str),
+        Property('mem_total', int),
+        Property('cpu_total', int),
+        Property('cpu_type', str),
+        Property('enlisted', bool, False, False),
+        Property('api_key', str)
     )
 
     @staticmethod

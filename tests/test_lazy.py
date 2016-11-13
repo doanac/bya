@@ -2,19 +2,19 @@ import json
 import os
 
 from tests import TempDirTest
-from bya.lazy import PropsFile, PropsDir
+from bya.lazy import ModelError, PropsFile, PropsDir, Property
 
 
 class FooModel(PropsFile):
     PROPS = (
-        ('required_str', lambda x: type(x) == str, True),
-        ('required_int', lambda x: type(x) == int, True),
-        ('optional_bool', lambda x: type(x) == bool, False),
+        Property('required_str', str),
+        Property('required_int', int),
+        Property('optional_bool', bool, True, False),
     )
 
 
 class BarModel(PropsDir):
-    PROPS = (('required_str', lambda x: type(x) == str, True),)
+    PROPS = (Property('required_str', str),)
 
 
 class PropsFileTest(TempDirTest):
@@ -24,16 +24,16 @@ class PropsFileTest(TempDirTest):
             'required_int': 1,
             'optional_bool': False,
         }
-        self.assertEqual([], FooModel.validate(data))
+        FooModel.validate(data)
 
     def test_missing_required(self):
         data = {
             'required_str': 'y',
             'optional_bool': False,
         }
-        e = FooModel.validate(data)
-        self.assertEqual(1, len(e))
-        self.assertEqual('Missing required attribute: "required_int".', e[0])
+        msg = 'Missing required attribute: "required_int".'
+        with self.assertRaisesRegexp(ModelError, msg):
+            FooModel.validate(data)
 
     def test_invalid(self):
         data = {
@@ -41,9 +41,9 @@ class PropsFileTest(TempDirTest):
             'required_int': '1',
             'optional_bool': False,
         }
-        e = FooModel.validate(data)
-        self.assertEqual(1, len(e))
-        self.assertEqual('Invalid value for "required_int".', e[0])
+        msg = "Property\(required_int\) must be: <class 'int'>"
+        with self.assertRaisesRegex(ModelError, msg):
+            FooModel.validate(data)
 
     def test_load(self):
         data = {
@@ -58,6 +58,7 @@ class PropsFileTest(TempDirTest):
         self.assertEqual('pname', p.name)
         self.assertEqual('y', p.required_str)
         self.assertEqual(1, p.required_int)
+        self.assertTrue(p.optional_bool)
 
 
 class PropsDirTest(TempDirTest):

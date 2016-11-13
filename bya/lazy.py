@@ -3,6 +3,31 @@ import json
 import os
 
 
+class ModelError(Exception):
+    def __init__(self, msg, code=500):
+        super(ModelError, self).__init__(msg)
+        self.status_code = code
+
+
+class Property(object):
+    def __init__(self, name, data_type, def_value=None, required=True):
+        self.name = name
+        self.required = required
+        self.def_value = def_value
+        self.data_type = data_type
+        if def_value:
+            self.validate(def_value)
+
+    def validate(self, value):
+        if value is None and self.required:
+            raise ModelError(
+                'Property(%s) must not be None' % self.name, 400)
+        if value is not None and type(value) != self.data_type:
+            raise ModelError(
+                'Property(%s) must be: %r' % (self.name, self.data_type), 400)
+        return value
+
+
 class PropsFile(object):
     '''Makes an easy way to build an object model based on a json/yaml file.
 
@@ -13,18 +38,13 @@ class PropsFile(object):
 
     @classmethod
     def validate(clazz, data):
-        errors = []
-        for attr, validator, required in clazz.PROPS:
-            val = data.get(attr)
-            if not val and required:
-                errors.append('Missing required attribute: "%s".' % attr)
+        for prop in clazz.PROPS:
+            val = data.get(prop.name)
+            if not val and prop.required:
+                raise ModelError(
+                    'Missing required attribute: "%s".' % prop.name)
             elif val:
-                r = validator(val)
-                if type(r) == str:
-                    errors.append(r)
-                elif not r:
-                    errors.append('Invalid value for "%s".' % attr)
-        return errors
+                data[prop.name] = prop.validate(val)
 
     @staticmethod
     def _prop(prop, self):
@@ -32,7 +52,12 @@ class PropsFile(object):
             # lazy load the definition
             with open(self._data) as f:
                 self._data = self._loader(f)
-        return self._data.get(prop)
+        v = self._data.get(prop)
+        if not v:
+            for p in self.PROPS:
+                if p.name == prop:
+                    return p.def_value
+        return v
 
     @classmethod
     def _class_init(clazz):
@@ -40,9 +65,9 @@ class PropsFile(object):
         flag = clazz.__name__ + '_fields_set'
         if getattr(clazz, flag, None):
             return
-        for p in clazz.PROPS:
-            setattr(
-                clazz, p[0], property(functools.partial(clazz._prop, p[0])))
+        for prop in clazz.PROPS:
+            setattr(clazz, prop.name,
+                    property(functools.partial(clazz._prop, prop.name)))
         setattr(clazz, flag, True)
 
     def __init__(self, name, props_file, loader=json.load):
