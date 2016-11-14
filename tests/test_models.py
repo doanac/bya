@@ -253,3 +253,12 @@ class HostTest(ModelTest):
         with self.assertRaises(ModelError):
             Host.get('bad name')
         self.assertEqual('aarch64', Host.get('host2').cpu_type)
+
+    def test_ping(self):
+        h = Host.get('host1')
+        self.assertFalse(h.online)
+        h.ping()
+        self.assertTrue(h.online)
+        with h.open_file('pings.log') as f:
+            os.utime(f.name, (time.time(), time.time() - 181))
+        self.assertFalse(h.online)

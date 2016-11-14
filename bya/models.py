@@ -390,3 +390,19 @@ class Host(PropsDir):
         if not os.path.exists(path):
             raise ModelError('Host(%s) does not exist' % name, 404)
         return Host(path)
+
+    def ping(self):
+        # TODO limit file size to 1M (>30 days)
+        with self.open_file('pings.log', mode='a') as f:
+            f.write('%d\n' % datetime.datetime.now().timestamp())
+
+    @property
+    def online(self):
+        """Online means we've been "pinged" in the last 3 minutes."""
+        try:
+            with self.open_file('pings.log') as f:
+                mtime = os.fstat(f.fileno()).st_mtime
+                now = datetime.datetime.now().timestamp()
+                return now - mtime < 180  # pinged in last 3 minutes
+        except FileNotFoundError:
+            return False
