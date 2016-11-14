@@ -35,6 +35,7 @@ class ModelTest(TempDirTest):
         os.mkdir(settings.QUEUE_DIR)
         settings.HOSTS_DIR = os.path.join(self.tempdir, 'hosts')
         os.mkdir(settings.HOSTS_DIR)
+        Host.PROPS_DIR = settings.HOSTS_DIR
 
         self.jobdef = {
             'description': 'test_simple',
@@ -49,6 +50,7 @@ class ModelTest(TempDirTest):
         settings.BUILDS_DIR = self.buildsdir
         settings.QUEUE_DIR = self.queuedir
         settings.HOSTS_DIR = self.hostsdir
+        Host.PROPS_DIR = settings.HOSTS_DIR
 
     @staticmethod
     def _write_job(name, jobdef):
@@ -241,9 +243,9 @@ class HostTest(ModelTest):
             'cpu_type': 'x86',
             'api_key': '1234',
         }
-        Host.create(os.path.join(settings.HOSTS_DIR, 'host1'), props)
+        Host.create('host1', props)
         props['cpu_type'] = 'aarch64'
-        Host.create(os.path.join(settings.HOSTS_DIR, 'host2'), props)
+        Host.create('host2', props)
 
     def test_list(self):
         hosts = [x.name for x in Host.list()]

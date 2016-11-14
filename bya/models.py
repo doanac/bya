@@ -369,6 +369,7 @@ jobs = JobGroup()
 
 
 class Host(PropsDir):
+    PROPS_DIR = settings.HOSTS_DIR
     PROPS = (
         Property('distro', str),
         Property('mem_total', int),

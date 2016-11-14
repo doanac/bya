@@ -120,6 +120,10 @@ class PropsDir(PropsFile):
         errs = clazz.validate(data)
         if errs:
             return errs
+
+        base = getattr(clazz, 'PROPS_DIR', None)
+        if base:
+            path = os.path.join(base, path)
         if not os.path.exists(path):
             os.mkdir(path)
         with open(os.path.join(path, 'props'), 'w') as f:
