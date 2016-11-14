@@ -379,19 +379,6 @@ class Host(PropsDir):
         Property('api_key', str)
     )
 
-    @staticmethod
-    def list():
-        for entry in os.scandir(settings.HOSTS_DIR):
-            if entry.is_dir():
-                yield Host(entry.path)
-
-    @staticmethod
-    def get(name):
-        path = os.path.join(settings.HOSTS_DIR, name)
-        if not os.path.exists(path):
-            raise ModelError('Host(%s) does not exist' % name, 404)
-        return Host(path)
-
     def ping(self):
         # TODO limit file size to 1M (>30 days)
         with self.open_file('pings.log', mode='a') as f:

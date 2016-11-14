@@ -32,7 +32,7 @@ class PropsFileTest(TempDirTest):
             'optional_bool': False,
         }
         msg = 'Missing required attribute: "required_int".'
-        with self.assertRaisesRegexp(ModelError, msg):
+        with self.assertRaisesRegex(ModelError, msg):
             FooModel.validate(data)
 
     def test_invalid(self):
