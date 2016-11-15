@@ -3,8 +3,12 @@ import os
 
 _here = os.path.realpath(os.path.dirname(__file__))
 
+WORKER_SCRIPT = os.path.join(_here, '../bya_worker.py')
+
 DEBUG = os.environ.get('DEBUG', '0')
 DEBUG = bool(int(DEBUG))
+
+AUTO_ENLIST_HOSTS = False
 
 JOBS_DIR = os.path.join(_here, '../../job-defs')
 BUILDS_DIR = os.path.join(_here, '../../builds')
