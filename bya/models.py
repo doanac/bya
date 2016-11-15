@@ -65,21 +65,6 @@ class Run(PropsDir):
                           (UNKNOWN, QUEUED, RUNNING, PASSED, FAILED), QUEUED),
     )
 
-    @classmethod
-    def create(cls, build_dir, name, container, host_tag, params):
-        path = os.path.join(build_dir, 'runs')
-        if not os.path.exists(path):
-            os.mkdir(path)
-        path = os.path.join(path, name)
-        if not host_tag:
-            host_tag = '*'
-
-        data = {'container': container, 'host_tag': host_tag, 'params': params}
-        PropsDir.create(path, data)
-        r = cls(path)
-        RunQueue.push(r, host_tag)
-        return r
-
     def append_log(self, msg):
         with self.log_fd('a') as f:
             f.write(msg)
@@ -125,10 +110,7 @@ class Build(object):
                 os.mkdir(os.path.join(path, str(b)))
                 b = cls(b, p)
                 b.append_to_summary('Build queued')
-                for r in runs:
-                    ht = job.get_host_tag(r['container'])
-                    Run.create(b.build_dir, r['name'], r['container'], ht,
-                               r.get('params'))
+                b._create_runs(job, runs)
                 return b
             except FileExistsError:
                 pass
@@ -146,6 +128,23 @@ class Build(object):
     def summary_fd(self, mode='r'):
         return open(os.path.join(self.build_dir, 'summary.log'), mode)
 
+    def _create_runs(self, job, runs):
+        path = os.path.join(self.build_dir, 'runs')
+        if not os.path.exists(path):
+            os.mkdir(path)
+        for r in runs:
+            host_tag = job.get_host_tag(r['container'])
+            if not host_tag:
+                host_tag = '*'
+            data = {
+                'container': r['container'],
+                'host_tag': host_tag,
+                'params': r.get('params'),
+            }
+            rp = os.path.join(path, r['name'])
+            Run.create(rp, data)
+            RunQueue.push(Run(rp), host_tag)
+
     @property
     def status(self):
         try:
@@ -162,9 +161,7 @@ class Build(object):
         return os.stat(self.build_dir).st_ctime
 
     def list_runs(self):
-        for entry in os.scandir(os.path.join(self.build_dir, 'runs')):
-            if entry.is_dir():
-                yield(Run(entry.path))
+        return Run.list(os.path.join(self.build_dir, 'runs'))
 
     def __repr__(self):
         return 'Build(%d)' % self.number

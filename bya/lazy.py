@@ -135,7 +135,7 @@ class PropsDir(PropsFile):
     def list(clazz, path=None):
         if path is None:
             path = clazz.PROPS_DIR
-        for entry in os.scandir(clazz.PROPS_DIR):
+        for entry in os.scandir(path):
             if entry.is_dir():
                 yield clazz(entry.path)
 

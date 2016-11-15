@@ -11,10 +11,20 @@ from bya.models import (
 
 
 class TestRun(ModelTest):
-    def test_create(self):
-        params = {'foo': 'bar', 'bam': 'BAM'}
-        r = Run.create(self.tempdir, 'run_foo', 'container_foo', '', params)
+    def _create(self, name, host_tag='*'):
+        data = {
+            'container': 'container_foo',
+            'host_tag': host_tag,
+            'params': {'foo': 'bar', 'bam': 'BAM'},
+        }
+        path = os.path.join(self.tempdir, name)
+        Run.create(path, data)
+        r = Run(path)
+        RunQueue.push(r, host_tag)
+        return r
 
+    def test_create(self):
+        r = self._create('blah')
         self.assertEqual('container_foo', r.container)
         self.assertEqual('bar', r.params['foo'])
         self.assertIn('BAM', r.params['bam'])
@@ -25,8 +35,7 @@ class TestRun(ModelTest):
             self.assertIn('hello world\nhello world', f.read())
 
     def test_status(self):
-        params = {'foo': 'bar', 'bam': 'BAM'}
-        r = Run.create(self.tempdir, 'run_foo', 'container_foo', '', params)
+        r = self._create('foo')
         r.update(status='PASSED')
         r = Run(r.path)
         self.assertEqual(r.PASSED, r.status)
@@ -34,10 +43,9 @@ class TestRun(ModelTest):
             r.update(status='BAD')
 
     def test_queue(self):
-        params = {'foo': 'bar', 'bam': 'BAM'}
-        Run.create(self.tempdir, 'run_foo', 'container_foo', 'tag', params)
-        Run.create(self.tempdir, 'run_bar', 'container_foo', 'tag', params)
-        Run.create(self.tempdir, 'run_X', 'container_foo', 'tag2', params)
+        self._create('run_foo', host_tag='tag')
+        self._create('run_bar', host_tag='tag')
+        self._create('run_X', host_tag='tag2')
 
         self.assertIsNone(RunQueue.take('host1', ['nosuchtags']))
 
