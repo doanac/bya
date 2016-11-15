@@ -124,20 +124,27 @@ class PropsDir(PropsFile):
         base = getattr(clazz, 'PROPS_DIR', None)
         if base:
             path = os.path.join(base, path)
-        if not os.path.exists(path):
-            os.mkdir(path)
+        if os.path.exists(path):
+            raise ModelError('%s(%s) already exists' % (
+                clazz.__name__, os.path.basename(path)), 409)
+        os.mkdir(path)
         with open(os.path.join(path, 'props'), 'w') as f:
             json.dump(data, f)
 
     @classmethod
-    def list(clazz):
+    def list(clazz, path=None):
+        if path is None:
+            path = clazz.PROPS_DIR
         for entry in os.scandir(clazz.PROPS_DIR):
             if entry.is_dir():
                 yield clazz(entry.path)
 
     @classmethod
-    def get(clazz, name):
-        path = os.path.join(clazz.PROPS_DIR, name)
+    def get(clazz, name, path=None):
+        if path is None:
+            path = clazz.PROPS_DIR
+        path = os.path.join(path, name)
         if not os.path.exists(path):
-            raise ModelError('Host(%s) does not exist' % name, 404)
+            raise ModelError(
+                '%s(%s) does not exist' % (clazz.__name__, name), 404)
         return clazz(path)

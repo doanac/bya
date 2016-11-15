@@ -71,7 +71,6 @@ class Run(PropsDir):
         if not os.path.exists(path):
             os.mkdir(path)
         path = os.path.join(path, name)
-        os.mkdir(path)
         if not host_tag:
             host_tag = '*'
 
