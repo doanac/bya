@@ -69,3 +69,12 @@ class ApiTests(ModelTest):
         resp = self.post_json('/api/v1/host/', h1)
         self.assertEqual('http://localhost/api/v1/host/host_1/', resp.location)
         self.patch_json(resp.location, {'enlisted': True}, h1['api_key'], 403)
+
+    def test_delete_host(self):
+        resp = self.post_json('/api/v1/host/', h1)
+        self.assertEqual('http://localhost/api/v1/host/host_1/', resp.location)
+
+        headers = [('Authorization', 'Token ' + h1['api_key'])]
+        resp = self.app.delete(
+            resp.location, headers=headers, content_type='application/json')
+        self.assertEqual(0, len(list(Host.list())))

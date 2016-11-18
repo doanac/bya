@@ -78,6 +78,13 @@ def host_update(name):
     return jsonify({})
 
 
+@app.route('/api/v1/host/<string:name>/', methods=['DELETE'])
+@host_authenticated
+def host_delete(name):
+    Host.get(name).delete()
+    return jsonify({})
+
+
 @app.route('/api/v1/host/<string:name>/', methods=['GET'])
 def host_get(name):
     h = Host.get(name)
