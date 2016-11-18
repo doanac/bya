@@ -214,3 +214,9 @@ class HostTest(ModelTest):
         with h.open_file('pings.log') as f:
             os.utime(f.name, (time.time(), time.time() - 181))
         self.assertFalse(h.online)
+
+    def test_delete(self):
+        self.assertEqual(2, len(list(Host.list())))
+        h = Host.get('host1')
+        h.delete()
+        self.assertEqual(1, len(list(Host.list())))

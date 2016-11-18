@@ -1,6 +1,7 @@
 import functools
 import json
 import os
+import shutil
 
 
 class ModelError(Exception):
@@ -114,6 +115,9 @@ class PropsDir(PropsFile):
 
     def open_file(self, name, mode='r'):
         return open(os.path.join(self.path, name), mode)
+
+    def delete(self):
+        shutil.rmtree(self.path)
 
     @classmethod
     def create(clazz, path, data):
