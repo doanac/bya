@@ -374,6 +374,7 @@ class Host(PropsDir):
         Property('enlisted', bool, False, False),
         Property('api_key', str),
         Property('concurrent_runs', int),
+        Property('host_tags', str),
     )
 
     def ping(self):

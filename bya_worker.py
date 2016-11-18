@@ -27,12 +27,13 @@ logging.basicConfig(
 log = logging.getLogger('bya-worker')
 
 
-def _create_conf(server_url, version):
+def _create_conf(server_url, version, concurrent_runs, host_tags):
     config.add_section('bya')
     config['bya']['server_url'] = server_url
     config['bya']['version'] = version
     config['bya']['log_level'] = 'INFO'
-    config['bya']['concurrent_runs'] = '2'
+    config['bya']['concurrent_runs'] = str(concurrent_runs)
+    config['bya']['host_tags'] = host_tags
     chars = string.ascii_letters + string.digits + '!@#$^&*~'
     config['bya']['host_api_key'] =\
         ''.join(random.choice(chars) for _ in range(32))
@@ -55,6 +56,7 @@ class HostProps(object):
             'api_key': config['bya']['host_api_key'],
             'name': config['bya']['hostname'],
             'concurrent_runs': int(config['bya']['concurrent_runs']),
+            'host_tags': config['bya']['host_tags'],
         }
 
     def _get_distro(self):
@@ -80,6 +82,21 @@ class HostProps(object):
             self.cache()
 
 
+class Runner(object):
+    RUNS_DIR = os.path.join(os.path.dirname(script), 'runs')
+
+    @classmethod
+    def get_num_available(clazz):
+        '''Return the number of available runners we have'''
+        active = 0
+        if os.path.exists(clazz.RUNS_DIR):
+            active = len(os.listdir(clazz.RUNS_DIR))
+        avail = int(config['bya']['concurrent_runs']) - active
+        if avail < 0:
+            log.error('Number of concurrent runs seems to be > max configured')
+        return avail
+
+
 class BYAServer(object):
     CRON_FILE = '/etc/cron.d/bya_worker'
 
@@ -92,9 +109,9 @@ class BYAServer(object):
             'Authorization': 'Token ' + config['bya']['host_api_key'],
         }
 
-    def _get(self, resource):
+    def _get(self, resource, params=None):
         url = urllib.parse.urljoin(config['bya']['server_url'], resource)
-        r = self.requests.get(url, headers=self._auth_headers())
+        r = self.requests.get(url, params=params, headers=self._auth_headers())
         if r.status_code != 200:
             log.error('Failed to issue request: %s\n' % r.text)
             sys.exit(1)
@@ -130,8 +147,10 @@ class BYAServer(object):
     def delete_host(self):
         self._delete('/api/v1/host/%s/' % config['bya']['hostname'])
 
-    def check_in(self):
-        return self._get('/api/v1/host/%s/' % config['bya']['hostname']).json()
+    def check_in(self, num_available):
+        params = {'available_runners': num_available}
+        return self._get(
+            '/api/v1/host/%s/' % config['bya']['hostname'], params).json()
 
     def get_worker_script(self):
         return self._get('/bya_worker.py').text
@@ -139,7 +158,8 @@ class BYAServer(object):
 
 def cmd_register(args):
     '''Register this host with the configured BYA server'''
-    _create_conf(args.server_url, args.version)
+    _create_conf(
+        args.server_url, args.version, args.concurrent_runs, args.host_tags)
     p = HostProps()
     args.server.create_host(p.data)
     p.cache()
@@ -168,7 +188,7 @@ def _upgrade_worker(args, version):
 def cmd_check(args):
     '''Check in with server for work'''
     HostProps().update_if_needed(args.server)
-    c = args.server.check_in()
+    c = args.server.check_in(Runner.get_num_available())
     if c['worker_version'] != config['bya']['version']:
         log.warning('Upgrading client to: %s', c['worker_version'])
         _upgrade_worker(args, c['worker_version'])
@@ -188,8 +208,11 @@ def get_args(args=None):
     p.set_defaults(func=cmd_register)
     p.add_argument('--no-cron', action='store_true',
                    help='Do not create a cron.d entry for this install')
+    p.add_argument('--concurrent-runs', type=int, default=2,
+                   help='Maximum number of current runs. Default=%(default)d')
     p.add_argument('server_url')
     p.add_argument('version')
+    p.add_argument('host_tags', help='Comma separated list')
 
     p = sub.add_parser('uninstall', help='Uninstall the client')
     p.set_defaults(func=cmd_uninstall)

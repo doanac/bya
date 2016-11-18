@@ -7,7 +7,8 @@ from bya import settings
 from bya.views import app
 from bya.models import (
     Host,
-    ModelError
+    ModelError,
+    RunQueue,
 )
 
 
@@ -88,9 +89,16 @@ def host_delete(name):
 @app.route('/api/v1/host/<string:name>/', methods=['GET'])
 def host_get(name):
     h = Host.get(name)
-    if _is_host_authenticated(h):
-        h.ping()
     h.cpu_type  # force data to be loaded
     h._data['worker_version'] = str(os.stat(settings.WORKER_SCRIPT).st_mtime)
+    if _is_host_authenticated(h):
+        h.ping()
+        avail = int(request.args.get('available_runners'))
+        if avail > 0:
+            # we could give more than one run, but for now try and give just
+            # one and let the runs spread out more amongst workers
+            r = RunQueue.take(h.name, h.host_tags.split(','))
+            if r:
+                h._data['runs'] = [r]
     del h._data['api_key']
     return jsonify(h._data)

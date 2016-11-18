@@ -36,8 +36,8 @@ class WorkerTests(ModelTest):
         args = self.worker.get_args(args)
         args.server.CRON_FILE = os.path.join(self.worker_dir, 'cron')
 
-        def _get(resource, headers):
-            resp = self.app.get(resource, headers=headers)
+        def _get(resource, params, headers):
+            resp = self.app.get(resource, query_string=params, headers=headers)
             resp.text = resp.data.decode()
 
             def as_json():
@@ -66,20 +66,20 @@ class WorkerTests(ModelTest):
         self.worker.main(args)
 
     def test_register_simple(self):
-        self._run_worker(['register', 'mocked', self.worker_version])
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
         self.assertTrue(os.path.exists(os.path.join(self.worker_dir, 'cron')))
         host = self.worker.HostProps().data['name']
         self.assertEqual([host], [x.name for x in Host.list()])
 
     def test_uninstall(self):
-        self._run_worker(['register', 'mocked', self.worker_version])
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
         self._run_worker(['uninstall'])
         self.assertEqual([], list(Host.list()))
         self.assertFalse(os.path.exists(self.worker_dir))
 
     @patch('os.execv')
     def test_upgrade(self, execv):
-        self._run_worker(['register', 'mocked', 'badversion'])
+        self._run_worker(['register', 'mocked', 'badversion', 'tag'])
         self._run_worker(['check'])
         self.assertTrue(execv.called)
         config_file = os.path.join(self.worker_dir, 'settings.conf')
@@ -88,7 +88,7 @@ class WorkerTests(ModelTest):
         self.assertEqual(self.worker_version, config['bya']['version'])
 
     def test_update_host(self):
-        self._run_worker(['register', 'mocked', self.worker_version])
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
         self.assertTrue(os.path.exists(self.worker.HostProps.CACHE))
         host = self.worker.HostProps().data['name']
         Host.get(host).update(cpu_type='test')

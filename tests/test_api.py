@@ -13,6 +13,7 @@ h1 = {
     'cpu_type': 'arm',
     'api_key': '12345',
     'concurrent_runs': 1,
+    'host_tags': 'host1',
 }
 
 
