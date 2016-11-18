@@ -47,16 +47,22 @@ class HostProps(object):
 
     def __init__(self):
         mem = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
-        distro, release, _ = platform.dist()
         self.data = {
             'cpu_total': cpu_count(),
             'cpu_type': platform.processor(),
             'mem_total': mem,
-            'distro': '%s %s' % (distro, release),
+            'distro': self._get_distro(),
             'api_key': config['bya']['host_api_key'],
             'name': config['bya']['hostname'],
             'concurrent_runs': int(config['bya']['concurrent_runs']),
         }
+
+    def _get_distro(self):
+        with open('/etc/os-release') as f:
+            for line in f:
+                if line.startswith('PRETTY_NAME'):
+                    return line.split('=')[1].strip().replace('"', '')
+        return '?'
 
     def cache(self):
         with open(self.CACHE, 'w') as f:
