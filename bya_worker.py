@@ -32,6 +32,7 @@ def _create_conf(server_url, version):
     config['bya']['server_url'] = server_url
     config['bya']['version'] = version
     config['bya']['log_level'] = 'INFO'
+    config['bya']['concurrent_runs'] = '2'
     chars = string.ascii_letters + string.digits + '!@#$^&*~'
     config['bya']['host_api_key'] =\
         ''.join(random.choice(chars) for _ in range(32))
@@ -54,6 +55,7 @@ class HostProps(object):
             'distro': '%s %s' % (distro, release),
             'api_key': config['bya']['host_api_key'],
             'name': config['bya']['hostname'],
+            'concurrent_runs': int(config['bya']['concurrent_runs']),
         }
 
     def cache(self):

@@ -192,6 +192,7 @@ class HostTest(ModelTest):
             'cpu_total': 2,
             'cpu_type': 'x86',
             'api_key': '1234',
+            'concurrent_runs': 2,
         }
         Host.create('host1', props)
         props['cpu_type'] = 'aarch64'

@@ -12,6 +12,7 @@ h1 = {
     'cpu_total': 5,
     'cpu_type': 'arm',
     'api_key': '12345',
+    'concurrent_runs': 1,
 }
 
 

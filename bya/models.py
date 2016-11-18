@@ -372,7 +372,8 @@ class Host(PropsDir):
         Property('cpu_total', int),
         Property('cpu_type', str),
         Property('enlisted', bool, False, False),
-        Property('api_key', str)
+        Property('api_key', str),
+        Property('concurrent_runs', int),
     )
 
     def ping(self):
