@@ -99,6 +99,6 @@ def host_get(name):
             # one and let the runs spread out more amongst workers
             r = RunQueue.take(h.name, h.host_tags.split(','))
             if r:
-                h._data['runs'] = [r]
+                h._data['runs'] = [r._data]
     del h._data['api_key']
     return jsonify(h._data)

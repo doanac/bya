@@ -96,6 +96,10 @@ class Runner(object):
             log.error('Number of concurrent runs seems to be > max configured')
         return avail
 
+    @classmethod
+    def execute(run):
+        raise NotImplementedError()
+
 
 class BYAServer(object):
     CRON_FILE = '/etc/cron.d/bya_worker'
@@ -192,6 +196,8 @@ def cmd_check(args):
     if c['worker_version'] != config['bya']['version']:
         log.warning('Upgrading client to: %s', c['worker_version'])
         _upgrade_worker(args, c['worker_version'])
+    for run in c.get('runs', []):
+        Runner.execute(run)
 
 
 def main(args):

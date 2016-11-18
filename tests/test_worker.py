@@ -9,7 +9,7 @@ from unittest.mock import patch
 from tests import ModelTest
 
 from bya import settings
-from bya.models import Host
+from bya.models import Host, Run, RunQueue
 from bya.views import app
 
 
@@ -99,3 +99,41 @@ class WorkerTests(ModelTest):
         # now run a check and it should update it back
         self._run_worker(['check'])
         self.assertNotEqual('test', Host.get(host).cpu_type)
+
+    def _create_run(self, name, host_tag='*'):
+        data = {
+            'container': 'container_foo',
+            'host_tag': host_tag,
+            'params': {'foo': 'bar', 'bam': 'BAM'},
+        }
+        path = os.path.join(self.tempdir, name)
+        Run.create(path, data)
+        RunQueue.push(Run(path), host_tag)
+
+    def test_getrun(self):
+        self._create_run('run_foo', host_tag='tag')
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+        self.hits = 0
+
+        def run(run):
+            self.hits += 1
+        self.worker.Runner.execute = run
+        self._run_worker(['check'])
+        self.assertEqual(1, self.hits)
+
+    def test_noruns(self):
+        self._create_run('run_foo', host_tag='tag')
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+
+        # fake out a full number of concurrent runs
+        p = os.path.join(self.worker_dir, 'runs')
+        os.mkdir(p)
+        os.mkdir(os.path.join(p, 'run1'))
+        os.mkdir(os.path.join(p, 'run2'))
+        self.hits = 0
+
+        def run(run):
+            self.hits += 1
+        self.worker.Runner.execute = run
+        self._run_worker(['check'])
+        self.assertEqual(0, self.hits)
