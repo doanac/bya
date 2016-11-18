@@ -91,6 +91,6 @@ def host_get(name):
     if _is_host_authenticated(h):
         h.ping()
     h.cpu_type  # force data to be loaded
-    h._data['worker_version'] = os.stat(settings.WORKER_SCRIPT).st_mtime
+    h._data['worker_version'] = str(os.stat(settings.WORKER_SCRIPT).st_mtime)
     del h._data['api_key']
     return jsonify(h._data)

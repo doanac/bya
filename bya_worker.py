@@ -73,6 +73,14 @@ class BYAServer(object):
             'Authorization': 'Token ' + config['bya']['host_api_key'],
         }
 
+    def _get(self, resource):
+        url = urllib.parse.urljoin(config['bya']['server_url'], resource)
+        r = self.requests.get(url, headers=self._auth_headers())
+        if r.status_code != 200:
+            log.error('Failed to issue request: %s\n' % r.text)
+            sys.exit(1)
+        return r
+
     def _post(self, resource, data):
         url = urllib.parse.urljoin(config['bya']['server_url'], resource)
         r = self.requests.post(url, json=data)
@@ -93,6 +101,12 @@ class BYAServer(object):
     def delete_host(self):
         self._delete('/api/v1/host/%s/' % config['bya']['hostname'])
 
+    def check_in(self):
+        return self._get('/api/v1/host/%s/' % config['bya']['hostname']).json()
+
+    def get_worker_script(self):
+        return self._get('/bya_worker.py').text
+
 
 def cmd_register(args):
     '''Register this host with the configured BYA server'''
@@ -109,6 +123,25 @@ def cmd_uninstall(args):
     '''Remove worker installation'''
     args.server.delete_host()
     shutil.rmtree(os.path.dirname(script))
+
+
+def _upgrade_worker(args, version):
+    buf = args.server.get_worker_script()
+    with open(__file__, 'wb') as f:
+        f.write(buf.encode())
+        f.flush()
+    config['bya']['version'] = version
+    with open(config_file, 'w') as f:
+        config.write(f, True)
+    os.execv(script, [script, 'check'])
+
+
+def cmd_check(args):
+    '''Check in with server for work'''
+    c = args.server.check_in()
+    if c['worker_version'] != config['bya']['version']:
+        log.warn('Upgrading client to: %s', c['worker_version'])
+        _upgrade_worker(args, c['worker_version'])
 
 
 def main(args):
@@ -130,6 +163,9 @@ def get_args(args=None):
 
     p = sub.add_parser('uninstall', help='Uninstall the client')
     p.set_defaults(func=cmd_uninstall)
+
+    p = sub.add_parser('check', help='Check in with server for updates')
+    p.set_defaults(func=cmd_check)
 
     args = parser.parse_args(args)
     args.server = BYAServer()
