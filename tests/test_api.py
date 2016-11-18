@@ -47,7 +47,8 @@ class ApiTests(ModelTest):
         self.assertEqual('http://localhost/api/v1/host/host_1/', resp.location)
         h = list(Host.list())
         self.assertEqual(1, len(h))
-        self.assertEqual('host_1', h[0].name)
+        self.assertEqual(h1['name'], h[0].name)
+        self.assertEqual(h1['api_key'], h[0].api_key)
 
         data = self.get_json('/api/v1/host/')
         self.assertEqual(1, len(data['hosts']))
