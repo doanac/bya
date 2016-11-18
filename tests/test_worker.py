@@ -1,5 +1,5 @@
 import importlib.util
-import json
+import json as jsonlib
 import os
 import shutil
 
@@ -9,10 +9,10 @@ from bya.models import Host
 from bya.views import app
 
 
-class ApiTests(ModelTest):
+class WorkerTests(ModelTest):
 
     def setUp(self):
-        super(ApiTests, self).setUp()
+        super(WorkerTests, self).setUp()
         app.config['TESTING'] = True
         self.app = app.test_client()
 
@@ -31,12 +31,15 @@ class ApiTests(ModelTest):
         args = self.worker.get_args(args)
         args.server.CRON_FILE = os.path.join(self.worker_dir, 'cron')
 
-        def _post(resource, data):
-            data = json.dumps(data)
-            resp = self.app.post(
+        def _post(resource, json):
+            data = jsonlib.dumps(json)
+            return self.app.post(
                 resource, data=data, content_type='application/json')
-            self.assertEqual(201, resp.status_code)
-        args.server._post = _post
+
+        def _delete(resource, headers):
+            return self.app.delete(resource, headers=headers)
+        args.server.requests.post = _post
+        args.server.requests.delete = _delete
         self.worker.main(args)
 
     def test_register_simple(self):
@@ -44,3 +47,9 @@ class ApiTests(ModelTest):
         self.assertTrue(os.path.exists(os.path.join(self.worker_dir, 'cron')))
         host = self.worker.HostProps().data['name']
         self.assertEqual([host], [x.name for x in Host.list()])
+
+    def test_uninstall(self):
+        self._run_worker(['register', 'mocked', '12'])
+        self._run_worker(['uninstall'])
+        self.assertEqual([], list(Host.list()))
+        self.assertFalse(os.path.exists(self.worker_dir))

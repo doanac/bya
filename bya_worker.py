@@ -7,6 +7,7 @@ import logging
 import os
 import platform
 import random
+import shutil
 import string
 import sys
 import urllib.parse
@@ -63,15 +64,34 @@ class HostProps(object):
 class BYAServer(object):
     CRON_FILE = '/etc/cron.d/bya_worker'
 
+    def __init__(self):
+        self.requests = requests
+
+    def _auth_headers(self):
+        return {
+            'content-type': 'application/json',
+            'Authorization': 'Token ' + config['bya']['host_api_key'],
+        }
+
     def _post(self, resource, data):
-        url = urllib.parse.urljoin(config.get('bya', 'server_url'), resource)
-        r = requests.post(url, json=data)
+        url = urllib.parse.urljoin(config['bya']['server_url'], resource)
+        r = self.requests.post(url, json=data)
         if r.status_code != 201:
+            log.error('Failed to issue request: %s\n' % r.text)
+            sys.exit(1)
+
+    def _delete(self, resource):
+        url = urllib.parse.urljoin(config['bya']['server_url'], resource)
+        r = self.requests.delete(url, headers=self._auth_headers())
+        if r.status_code != 200:
             log.error('Failed to issue request: %s\n' % r.text)
             sys.exit(1)
 
     def create_host(self, hostprops):
         self._post('/api/v1/host/', hostprops)
+
+    def delete_host(self):
+        self._delete('/api/v1/host/%s/' % config['bya']['hostname'])
 
 
 def cmd_register(args):
@@ -87,10 +107,8 @@ def cmd_register(args):
 
 def cmd_uninstall(args):
     '''Remove worker installation'''
-    os.unlink(args.server.CRON_FILE)
-    os.unlink(config_file)
-    os.unlink(script)
-    os.rmdir(os.path.dirname(script))
+    args.server.delete_host()
+    shutil.rmtree(os.path.dirname(script))
 
 
 def main(args):
