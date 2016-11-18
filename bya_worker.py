@@ -60,6 +60,17 @@ class HostProps(object):
         with open(self.CACHE, 'w') as f:
             json.dump(self.data, f)
 
+    def update_if_needed(self, server):
+        try:
+            with open(self.CACHE) as f:
+                cached = json.load(f)
+        except:
+            cached = {}
+        if cached != self.data:
+            log.info('updating host properies on server: %s', self.data)
+            server.update_host(self.data)
+            self.cache()
+
 
 class BYAServer(object):
     CRON_FILE = '/etc/cron.d/bya_worker'
@@ -88,6 +99,13 @@ class BYAServer(object):
             log.error('Failed to issue request: %s\n' % r.text)
             sys.exit(1)
 
+    def _patch(self, resource, data):
+        url = urllib.parse.urljoin(config['bya']['server_url'], resource)
+        r = self.requests.patch(url, json=data, headers=self._auth_headers())
+        if r.status_code != 200:
+            log.error('Failed to issue request: %s\n' % r.text)
+            sys.exit(1)
+
     def _delete(self, resource):
         url = urllib.parse.urljoin(config['bya']['server_url'], resource)
         r = self.requests.delete(url, headers=self._auth_headers())
@@ -97,6 +115,9 @@ class BYAServer(object):
 
     def create_host(self, hostprops):
         self._post('/api/v1/host/', hostprops)
+
+    def update_host(self, hostprops):
+        self._patch('/api/v1/host/%s/' % config['bya']['hostname'], hostprops)
 
     def delete_host(self):
         self._delete('/api/v1/host/%s/' % config['bya']['hostname'])
@@ -138,9 +159,10 @@ def _upgrade_worker(args, version):
 
 def cmd_check(args):
     '''Check in with server for work'''
+    HostProps().update_if_needed(args.server)
     c = args.server.check_in()
     if c['worker_version'] != config['bya']['version']:
-        log.warn('Upgrading client to: %s', c['worker_version'])
+        log.warning('Upgrading client to: %s', c['worker_version'])
         _upgrade_worker(args, c['worker_version'])
 
 

@@ -50,10 +50,18 @@ class WorkerTests(ModelTest):
             return self.app.post(
                 resource, data=data, content_type='application/json')
 
+        def _patch(resource, json, headers):
+            data = jsonlib.dumps(json)
+            resp = self.app.patch(resource, data=data, headers=headers,
+                                  content_type='application/json')
+            resp.text = resp.data.decode()
+            return resp
+
         def _delete(resource, headers):
             return self.app.delete(resource, headers=headers)
         args.server.requests.get = _get
         args.server.requests.post = _post
+        args.server.requests.patch = _patch
         args.server.requests.delete = _delete
         self.worker.main(args)
 
@@ -78,3 +86,16 @@ class WorkerTests(ModelTest):
         config = ConfigParser()
         config.read([config_file])
         self.assertEqual(self.worker_version, config['bya']['version'])
+
+    def test_update_host(self):
+        self._run_worker(['register', 'mocked', self.worker_version])
+        self.assertTrue(os.path.exists(self.worker.HostProps.CACHE))
+        host = self.worker.HostProps().data['name']
+        Host.get(host).update(cpu_type='test')
+        props = self.worker.HostProps()
+        props.data['cpu_type'] = 'test'
+        props.cache()
+
+        # now run a check and it should update it back
+        self._run_worker(['check'])
+        self.assertNotEqual('test', Host.get(host).cpu_type)
