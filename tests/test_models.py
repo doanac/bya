@@ -16,6 +16,7 @@ class TestRun(ModelTest):
             'container': 'container_foo',
             'host_tag': host_tag,
             'params': {'foo': 'bar', 'bam': 'BAM'},
+            'api_key': '1',
         }
         path = os.path.join(self.tempdir, name)
         Run.create(path, data)

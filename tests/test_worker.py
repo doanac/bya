@@ -105,6 +105,7 @@ class WorkerTests(ModelTest):
             'container': 'container_foo',
             'host_tag': host_tag,
             'params': {'foo': 'bar', 'bam': 'BAM'},
+            'api_key': 'blah',
         }
         path = os.path.join(self.tempdir, name)
         Run.create(path, data)

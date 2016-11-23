@@ -1,5 +1,7 @@
 import datetime
 import os
+import random
+import string
 
 from operator import attrgetter
 
@@ -61,6 +63,7 @@ class Run(PropsDir):
         Property('container', str),
         Property('host_tag', str),
         Property('params', dict, required=False),
+        Property('api_key', str),
         StrChoiceProperty('status',
                           (UNKNOWN, QUEUED, RUNNING, PASSED, FAILED), QUEUED),
     )
@@ -136,10 +139,14 @@ class Build(object):
             host_tag = job.get_host_tag(r['container'])
             if not host_tag:
                 host_tag = '*'
+            key = ''.join(
+                random.SystemRandom().choice(
+                    string.ascii_uppercase + string.digits) for _ in range(16))
             data = {
                 'container': r['container'],
                 'host_tag': host_tag,
                 'params': r.get('params'),
+                'api_key': key,
             }
             rp = os.path.join(path, r['name'])
             Run.create(rp, data)
