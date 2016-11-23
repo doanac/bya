@@ -32,18 +32,18 @@ class RunQueue(object):
     def take(host, host_tags):
         '''Find the first queued run that matches one of the host tags'''
         oldest = None
-        if os.path.exists(settings.QUEUE_DIR):
-            for e in os.scandir(settings.QUEUE_DIR):
-                tag, ts = e.name.split('#', 1)
-                ts = float(ts)
-                if tag == '*' or tag in host_tags:
-                    if not oldest or ts < oldest[1]:
-                        oldest = (e, ts)
+        for e in os.scandir(settings.QUEUE_DIR):
+            tag, ts = e.name.split('#', 1)
+            ts = float(ts)
+            if tag == '*' or tag in host_tags:
+                if not oldest or ts < oldest[1]:
+                    oldest = (e, ts)
         if oldest:
             try:
                 run = os.path.join(
                     settings.QUEUE_DIR, os.readlink(oldest[0].path))
-                os.unlink(oldest[0].path)
+                dst = os.path.join(settings.RUNNING_DIR, oldest[0].name)
+                os.rename(oldest[0].path, dst)
             except FileNotFoundError:
                 log.error('Unexpected race condition handling: %s', run.path)
                 return

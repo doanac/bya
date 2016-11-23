@@ -13,6 +13,7 @@ AUTO_ENLIST_HOSTS = False
 JOBS_DIR = os.path.join(_here, '../../job-defs')
 BUILDS_DIR = os.path.join(_here, '../../builds')
 QUEUE_DIR = os.path.join(_here, '../../run-queue')
+RUNNING_DIR = os.path.join(_here, '../../active-runs')
 HOSTS_DIR = os.path.join(_here, '../../hosts')
 
 

@@ -19,19 +19,14 @@ class TempDirTest(unittest.TestCase):
 class ModelTest(TempDirTest):
     def setUp(self):
         super(ModelTest, self).setUp()
-        self.jobsdir = settings.JOBS_DIR
-        self.buildsdir = settings.BUILDS_DIR
-        self.queuedir = settings.QUEUE_DIR
-        self.hostsdir = settings.HOSTS_DIR
+        self.mocked_dirs = (
+            'JOBS_DIR', 'BUILDS_DIR', 'QUEUE_DIR', 'RUNNING_DIR', 'HOSTS_DIR')
 
-        settings.JOBS_DIR = os.path.join(self.tempdir, 'jobs')
-        os.mkdir(settings.JOBS_DIR)
-        settings.BUILDS_DIR = os.path.join(self.tempdir, 'builds')
-        os.mkdir(settings.BUILDS_DIR)
-        settings.QUEUE_DIR = os.path.join(self.tempdir, 'run-queue')
-        os.mkdir(settings.QUEUE_DIR)
-        settings.HOSTS_DIR = os.path.join(self.tempdir, 'hosts')
-        os.mkdir(settings.HOSTS_DIR)
+        for attr in self.mocked_dirs:
+            setattr(self, attr, getattr(settings, attr))
+            setattr(settings, attr, os.path.join(self.tempdir, attr))
+            os.mkdir(getattr(settings, attr))
+
         Host.PROPS_DIR = settings.HOSTS_DIR
 
         self.jobdef = {
@@ -43,10 +38,8 @@ class ModelTest(TempDirTest):
 
     def tearDown(self):
         super(ModelTest, self).tearDown()
-        settings.JOBS_DIR = self.jobsdir
-        settings.BUILDS_DIR = self.buildsdir
-        settings.QUEUE_DIR = self.queuedir
-        settings.HOSTS_DIR = self.hostsdir
+        for attr in self.mocked_dirs:
+            setattr(settings, attr, getattr(self, attr))
         Host.PROPS_DIR = settings.HOSTS_DIR
 
     @staticmethod
