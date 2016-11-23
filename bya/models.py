@@ -77,16 +77,26 @@ class Run(PropsDir):
 
     def get_rundef(self):
         builds = os.path.abspath(os.path.join(self.path, '../..'))
-        jobname = os.path.basename(os.path.dirname(builds))
-        jobdef = jobs.find_jobdef(jobname.replace('#', '/'))
+        bname = os.path.basename(os.path.dirname(builds))
+        jobdef = jobs.find_jobdef(bname.replace('#', '/'))
+        bnum = os.path.basename(os.path.dirname(os.path.dirname(self.path)))
 
-        steps = {
-            'container': self.container,
-            'params': self.params,
-            'timeout': jobdef.timeout,
-            'script': jobdef.script,
+        with open(settings.RUNNER_SCRIPT) as f:
+            runner = f.read()
+
+        return {
+            'env': self.params,
+            'stdin': jobdef.script,
+            'args': {
+                '--api_key': self.api_key,
+                '--run': self.name,
+                '--build_name': bname,
+                '--build_num': int(bnum),
+                '--timeout': jobdef.timeout,
+                '--container': self.container,
+            },
+            'runner': runner,
         }
-        return steps
 
 
 class Build(object):

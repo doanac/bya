@@ -4,6 +4,7 @@ import os
 _here = os.path.realpath(os.path.dirname(__file__))
 
 WORKER_SCRIPT = os.path.join(_here, '../bya_worker.py')
+RUNNER_SCRIPT = os.path.join(_here, '../bya_runner.py')
 
 DEBUG = os.environ.get('DEBUG', '0')
 DEBUG = bool(int(DEBUG))
