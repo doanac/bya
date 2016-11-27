@@ -8,6 +8,7 @@ from bya.views import app
 from bya.models import (
     Host,
     ModelError,
+    Run,
     RunQueue,
 )
 
@@ -39,6 +40,33 @@ def host_authenticated(f):
             resp = jsonify({'Message': 'Incorrect API key for host'})
             resp.status_code = 401
             return resp
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def run_authenticated(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        key = request.headers.get('Authorization', None)
+        if not key:
+            resp = jsonify({'Message': 'No Authorization header provided'})
+            resp.status_code = 401
+            return resp
+        parts = key.split(' ')
+        if len(parts) != 2 or parts[0] != 'Token':
+            resp = jsonify({'Message': 'Invalid Authorization header'})
+            resp.status_code = 401
+            return resp
+        run = Run.get(kwargs['bname'], kwargs['bnum'], kwargs['run'])
+        if parts[1] != run.api_key:
+            resp = jsonify({'Message': 'Incorrect API key for run'})
+            resp.status_code = 401
+            return resp
+        if run.status in (Run.PASSED, Run.FAILED):
+            resp = jsonify({'Message': 'Run has completed'})
+            resp.status_code = 401
+            return resp
+        request.run = run
         return f(*args, **kwargs)
     return wrapper
 
@@ -102,3 +130,16 @@ def host_get(name):
                 h._data['runs'] = [r._data]
     del h._data['api_key']
     return jsonify(h._data)
+
+
+@app.route('/api/v1/build/<string:bname>/<int:bnum>/<string:run>',
+           methods=['POST'])
+@run_authenticated
+def run_update(bname, bnum, run):
+    status = request.headers.get('X-BYA-STATUS')
+    if status:
+        request.run.update(status=status)
+    log_data = request.data.decode()
+    if log_data:
+        request.run.append_log(log_data)
+    return jsonify({})

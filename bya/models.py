@@ -68,6 +68,12 @@ class Run(PropsDir):
                           (UNKNOWN, QUEUED, RUNNING, PASSED, FAILED), QUEUED),
     )
 
+    @classmethod
+    def get(clazz, build_name, build_num, run):
+        path = os.path.join(settings.BUILDS_DIR, build_name,
+                            str(build_num), 'runs', run)
+        return clazz(path)
+
     def append_log(self, msg):
         with self.log_fd('a') as f:
             f.write(msg)
@@ -133,6 +139,7 @@ class Build(object):
     def __init__(self, number, build_dir):
         self.number = int(number)
         self.build_dir = build_dir
+        self.name = os.path.basename(os.path.dirname(build_dir))
 
     def append_to_summary(self, msg):
         with self.summary_fd('w') as f:

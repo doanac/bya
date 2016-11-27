@@ -3,7 +3,7 @@ import json
 from tests import ModelTest
 
 from bya.views import app
-from bya.models import Host
+from bya.models import Host, JobGroup, Run
 
 h1 = {
     'name': 'host_1',
@@ -81,3 +81,93 @@ class ApiTests(ModelTest):
         resp = self.app.delete(
             resp.location, headers=headers, content_type='application/json')
         self.assertEqual(0, len(list(Host.list())))
+
+    def test_run_update(self):
+        self._write_job('name', self.jobdef)
+        jobs = JobGroup()
+        job = jobs.get_jobdefs()[0]
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        run = list(build.list_runs())[0]
+        headers = [
+            ('Authorization', 'Token ' + run.api_key),
+            ('X-BYA-STATUS', Run.PASSED),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        self.post_json(url, data, status_code=200, headers=headers)
+        run = list(build.list_runs())[0]
+        self.assertEqual(Run.PASSED, run.status)
+        with run.log_fd() as f:
+            self.assertIn(data, f.read())
+
+    def test_run_update_no_status(self):
+        self._write_job('name', self.jobdef)
+        jobs = JobGroup()
+        job = jobs.get_jobdefs()[0]
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        run = list(build.list_runs())[0]
+        headers = [
+            ('Authorization', 'Token ' + run.api_key),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        self.post_json(url, data, status_code=200, headers=headers)
+        run = list(build.list_runs())[0]
+        self.assertEqual(Run.QUEUED, run.status)
+        with run.log_fd() as f:
+            self.assertIn(data, f.read())
+
+    def test_run_update_bad_key(self):
+        self._write_job('name', self.jobdef)
+        jobs = JobGroup()
+        job = jobs.get_jobdefs()[0]
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        run = list(build.list_runs())[0]
+        headers = [
+            ('Authorization', 'Token badkey'),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        self.post_json(url, data, status_code=401, headers=headers)
+
+    def test_run_no_run(self):
+        self._write_job('name', self.jobdef)
+        jobs = JobGroup()
+        job = jobs.get_jobdefs()[0]
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        headers = [
+            ('Authorization', 'Token badkey'),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/nosuchrun' % (build.name, build.number)
+        self.post_json(url, data, status_code=404, headers=headers)
+
+    def test_nested_run(self):
+        self._write_job('nested/name', self.jobdef)
+        job = JobGroup().find_jobdef('nested/name')
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        run = list(build.list_runs())[0]
+        headers = [
+            ('Authorization', 'Token ' + run.api_key),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        self.post_json(url, data, status_code=200, headers=headers)
+        run = list(build.list_runs())[0]
+        self.assertEqual(Run.QUEUED, run.status)
+        with run.log_fd() as f:
+            self.assertIn(data, f.read())
+
+    def test_run_update_completed(self):
+        self._write_job('name', self.jobdef)
+        jobs = JobGroup()
+        job = jobs.get_jobdefs()[0]
+        build = job.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        run = list(build.list_runs())[0]
+        run.update(status=Run.PASSED)
+        headers = [
+            ('Authorization', 'Token ' + run.api_key),
+        ]
+        data = 'logmessage1'
+        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        self.post_json(url, data, status_code=401, headers=headers)
