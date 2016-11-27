@@ -85,6 +85,8 @@ class PropsFile(object):
         setattr(clazz, flag, True)
 
     def __init__(self, name, props_file, loader=json.load):
+        if not os.path.exists(props_file):
+            raise ModelError('%s does not exist' % name, 404)
         self._class_init()
         self.name = name
         self._file = props_file

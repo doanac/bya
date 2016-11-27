@@ -60,6 +60,10 @@ class PropsFileTest(TempDirTest):
         self.assertEqual(1, p.required_int)
         self.assertTrue(p.optional_bool)
 
+    def test_does_not_exist(self):
+        with self.assertRaisesRegex(ModelError, 'pname does not exist'):
+            FooModel('pname', 'path does not exist')
+
 
 class PropsDirTest(TempDirTest):
     def test_simple(self):
