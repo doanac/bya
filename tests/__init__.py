@@ -33,7 +33,7 @@ class ModelTest(TempDirTest):
             'description': 'test_simple',
             'script': 'exit 0',
             'timeout': 5,
-            'containers': [{'image': 'ubuntu'}],
+            'containers': [{'image': 'ubuntu'}, {'image': 'busybox'}],
         }
 
     def tearDown(self):
