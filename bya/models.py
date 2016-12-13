@@ -45,7 +45,7 @@ class RunQueue(object):
                 dst = os.path.join(settings.RUNNING_DIR, oldest[0].name)
                 os.rename(oldest[0].path, dst)
             except FileNotFoundError:
-                log.error('Unexpected race condition handling: %s', run.path)
+                log.error('Unexpected race condition handling: %s', run)
                 return
             run = Run(run)
             run.append_log('# Dequeued to: %s\n' % host)
@@ -93,14 +93,14 @@ class Run(PropsDir):
         return {
             'env': self.params,
             'stdin': jobdef.script,
-            'args': {
-                '--api_key': self.api_key,
-                '--run': self.name,
-                '--build_name': bname,
-                '--build_num': int(bnum),
-                '--timeout': jobdef.timeout,
-                '--container': self.container,
-            },
+            'args': [
+                '--api_key', self.api_key,
+                '--run', self.name,
+                '--build_name', bname,
+                '--build_num', bnum,
+                '--timeout', str(jobdef.timeout),
+                '--container', self.container,
+            ],
             'runner': runner,
         }
 

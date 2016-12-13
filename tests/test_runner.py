@@ -43,9 +43,8 @@ class RunnerTests(ModelTest):
         self.run = RunQueue.take('host1', ['tag'])
         self.rundef = self.run.get_rundef()
         self.args = []
-        for k, v in self.rundef['args'].items():
-            self.args.append(k)
-            self.args.append(str(v))
+        for arg in self.rundef['args']:
+            self.args.append(arg)
 
     def _exec(self, args, script):
         args = self.runner.get_args(args)

@@ -71,10 +71,8 @@ class TestRun(ModelTest):
         j = jobs.find_jobdef(jobname)
         j.create_build([{'name': 'foo', 'container': 'ubuntu'}])
         d = RunQueue.take('host1', ['tag']).get_rundef()
-        self.assertEqual(self.jobdef['timeout'], d['args']['--timeout'])
-        self.assertEqual(jobname, d['args']['--build_name'])
-        self.assertEqual(1, d['args']['--build_num'])
-        self.assertEqual('foo', d['args']['--run'])
+        self.assertIn(str(self.jobdef['timeout']), d['args'])
+        self.assertIn(jobname, d['args'])
 
 
 class TestBuild(TempDirTest):
