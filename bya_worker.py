@@ -10,6 +10,7 @@ import random
 import shutil
 import string
 import sys
+import tempfile
 import urllib.parse
 
 from configparser import ConfigParser
@@ -25,6 +26,7 @@ config.read([config_file])
 logging.basicConfig(
     level=getattr(logging, config.get('bya', 'log_level', fallback='INFO')))
 log = logging.getLogger('bya-worker')
+logging.getLogger('requests').setLevel(logging.WARNING)
 
 
 def _create_conf(server_url, version, concurrent_runs, host_tags):
@@ -97,8 +99,31 @@ class Runner(object):
         return avail
 
     @classmethod
-    def execute(run):
-        raise NotImplementedError()
+    def execute(clazz, run):
+        dirname = tempfile.mkdtemp(dir=os.path.dirname(script))
+        args = ['./runner'] + run.get('args', [])
+        runner = os.path.join(dirname, 'runner')
+        stdin = os.path.join(dirname, 'stdin')
+        with open(runner, 'w') as f:
+            f.write(run['runner'])
+            os.fchmod(f.fileno(), 0o755)
+        with open(stdin, 'w') as f:
+            if run['stdin']:
+                f.write(run['stdin'])
+        if os.fork() == 0:
+            # TODO close flock?
+            if run['env']:
+                for k, v in run['env'].items():
+                    os.environ[k] = v
+            os.environ['BYA_SERVER'] = config['bya']['server_url']
+            os.chdir(dirname)
+            fd = open('runner.out', 'w')
+            os.dup2(fd.fileno(), sys.stdout.fileno())
+            os.dup2(fd.fileno(), sys.stderr.fileno())
+            os.dup2(os.open(stdin, os.O_RDONLY), sys.stdin.fileno())
+            fd.write('# %s\n' % ' '.join(args))
+            os.execv(args[0], args)
+            sys.exit('os.exec failed')
 
 
 class BYAServer(object):
@@ -197,6 +222,7 @@ def cmd_check(args):
         log.warning('Upgrading client to: %s', c['worker_version'])
         _upgrade_worker(args, c['worker_version'])
     for run in c.get('runs', []):
+        log.debug('executing run: %s', run.get('args'))
         Runner.execute(run)
 
 

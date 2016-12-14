@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import fcntl
 import logging
 import os
 import select
@@ -24,9 +25,9 @@ def _get_params():
 
 def _post(url, data, headers, retry=1):
     for x in range(retry):
-        r = requests.post(url, json=data)
+        r = requests.post(url, headers=headers, data=data)
         if r.status_code == 200:
-            return
+            return r
         time.sleep(2*x + 1)  # try and give the server a moment
     log.error('Failed to issue request(%s): %s\n' % (url, r.text))
     return False
@@ -37,7 +38,7 @@ def _update_run(args, msg, status=None, retry=2):
                 '/' + args.run)
     url = urllib.parse.urljoin(args.bya_server, resource)
     headers = {
-        'content-type': 'application/json',
+        'content-type': 'text/plain',
         'Authorization': 'Token ' + args.api_key,
     }
     if status:
@@ -46,6 +47,7 @@ def _update_run(args, msg, status=None, retry=2):
 
 
 def _update_status(args, status, msg):
+    log.debug('Updating status to: %s : %s', status, msg)
     msg = '== %s: %s\n' % (datetime.datetime.utcnow(), msg)
     if not _update_run(args, msg, status, 4):
         log.error('TODO HOW TO HANDLE?')
@@ -55,35 +57,47 @@ def _stream_output(args, data):
     return _update_run(args, data, retry=2)
 
 
-def _run_cmd(args, *cmd):
-    _update_status(args, 'RUNNING', 'running: %s' % ' '.join(cmd))
+def _cmd_output(cmd):
+    '''Simple non-blocking way to stream the output of a command'''
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    fds = [p.stdout, p.stderr]
 
-    with open('console.log', 'wb') as f:
-        last_update = 0
-        last_buff = b''
-        fds = [p.stdout, p.stderr]
-        while len(fds) > 0:
-            for fd in select.select(fds, [], [])[0]:
-                buff = fd.read(1024)
-                if buff == b'':
-                    fds.remove(fd)
-                    break
-                f.write(buff)
-                now = time.time()
-                # stream data every 20s or if we have a 1M of data
-                if now - last_update > 20 or len(buff) > 1048576:
-                    if not _stream_output(args, last_buff + buff):
-                        last_buff += buff
-                    else:
-                        last_buff = b''
-                else:
-                    last_buff += buff
-    if last_buff and not _stream_output(args, last_buff):
-        log.warn('Unable to stream part of command output: %s', last_buff)
+    for fd in fds:  # Ensure pipes are set to non-block
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    while len(fds) > 0:
+        for fd in select.select(fds, [], [])[0]:
+            buff = fd.read(1024)
+            if buff == b'':
+                fds.remove(fd)
+                break
+            yield buff
     p.wait()
     if p.returncode != 0:
         raise Exception('Error running command: rc=%d' % p.returncode)
+
+
+def _run_cmd(args, *cmd):
+    _update_status(args, 'RUNNING', 'running: %s' % ' '.join(cmd))
+    with open('console.log', 'wb') as f:
+        last_update = 0
+        last_buff = b''
+        for buff in _cmd_output(cmd):
+            f.write(buff)
+            now = time.time()
+            # stream data every 20s or if we have a 1M of data
+            if now - last_update > 20 or len(buff) > 1048576:
+                if not _stream_output(args, last_buff + buff):
+                    last_buff += buff
+                else:
+                    last_buff = b''
+            else:
+                last_buff += buff
+        if last_buff:
+            f.write(buff)
+            if not _stream_output(args, last_buff):
+                log.warn('Unable to stream part of output: %s', last_buff)
 
 
 def main(args):
@@ -99,7 +113,10 @@ def main(args):
         _update_status(args, 'PASSED', 'bya_runner completed')
     except:
         stack = traceback.format_exc()
+        log.error(stack)
         _update_status(args, 'FAILED', 'bya_runner failed with: %s' % stack)
+    finally:
+        pass  # TODO remove directory we ran from
 
 
 def get_args(args=None):

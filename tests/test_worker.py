@@ -9,7 +9,7 @@ from unittest.mock import patch
 from tests import ModelTest
 
 from bya import settings
-from bya.models import Host, Run, RunQueue
+from bya.models import Host, jobs
 from bya.views import app
 
 
@@ -100,19 +100,14 @@ class WorkerTests(ModelTest):
         self._run_worker(['check'])
         self.assertNotEqual('test', Host.get(host).cpu_type)
 
-    def _create_run(self, name, host_tag='*'):
-        data = {
-            'container': 'container_foo',
-            'host_tag': host_tag,
-            'params': {'foo': 'bar', 'bam': 'BAM'},
-            'api_key': 'blah',
-        }
-        path = os.path.join(self.tempdir, name)
-        Run.create(path, data)
-        RunQueue.push(Run(path), host_tag)
+    def _create_run(self):
+        jobname = 'jobname_foo'
+        self._write_job(jobname, self.jobdef)
+        j = jobs.find_jobdef(jobname)
+        j.create_build([{'name': 'foo', 'container': 'busybox'}])
 
     def test_getrun(self):
-        self._create_run('run_foo', host_tag='tag')
+        self._create_run()
         self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
         self.hits = 0
 
@@ -123,7 +118,7 @@ class WorkerTests(ModelTest):
         self.assertEqual(1, self.hits)
 
     def test_noruns(self):
-        self._create_run('run_foo', host_tag='tag')
+        self._create_run()
         self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
 
         # fake out a full number of concurrent runs
@@ -138,3 +133,14 @@ class WorkerTests(ModelTest):
         self.worker.Runner.execute = run
         self._run_worker(['check'])
         self.assertEqual(0, self.hits)
+
+    def test_execute_run(self):
+        self._create_run()
+        self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+        self.hits = 0
+
+        def run(run):
+            self.hits += 1
+        self.worker.Runner.execute = run
+        self._run_worker(['check'])
+        self.assertEqual(1, self.hits)
