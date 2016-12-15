@@ -5,6 +5,7 @@ import yaml
 
 from tests import TempDirTest, ModelTest
 
+from bya import settings
 from bya.models import (
     Build, Host, JobDefinition, JobGroup, ModelError, Run, RunQueue, jobs
 )
@@ -67,6 +68,10 @@ class TestRun(ModelTest):
 
         # empty queue now
         self.assertIsNone(RunQueue.take('host2', ['tag']))
+
+        self.assertEqual(3, len(os.listdir(settings.RUNNING_DIR)))
+        RunQueue.complete(r, Run.PASSED)
+        self.assertEqual(2, len(os.listdir(settings.RUNNING_DIR)))
 
     def test_full_run(self):
         jobname = 'jobname_foo'

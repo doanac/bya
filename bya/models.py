@@ -50,8 +50,18 @@ class RunQueue(object):
             run = Run(run)
             run.append_log('# Dequeued to: %s\n' % host)
             run.get_build().append_to_summary(
-                'Dequeued %s to: %s\n' % (run, host))
+                'Dequeued %s to: %s' % (run, host))
             return run
+
+    @staticmethod
+    def complete(run, status):
+        '''Remove a run's symlink from the RUNNING_DIR'''
+        run.get_build().append_to_summary('%s status=%s' % (run, status))
+        for e in os.scandir(settings.RUNNING_DIR):
+            path = os.readlink(e.path)
+            if path == run.path:
+                os.unlink(e.path)
+                break
 
 
 class Run(PropsDir):
@@ -75,6 +85,12 @@ class Run(PropsDir):
         path = os.path.join(settings.BUILDS_DIR, build_name,
                             str(build_num), 'runs', run)
         return clazz(path)
+
+    def update(self, **kwargs):
+        super(Run, self).update(**kwargs)
+        status = kwargs.get('status')
+        if status in (Run.FAILED, Run.PASSED):
+            RunQueue.complete(self, status)
 
     def append_log(self, msg):
         with self.log_fd('a') as f:
