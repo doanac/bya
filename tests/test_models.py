@@ -86,10 +86,11 @@ class TestRun(ModelTest):
 class TestBuild(TempDirTest):
     def test_build(self):
         b = Build(12, self.tempdir)
+        os.mkdir(os.path.join(self.tempdir, 'runs'))
         b.append_to_summary('hello there')
         with b.summary_fd() as f:
             self.assertIn('hello there', f.read())
-        self.assertEqual('QUEUED', b.status)
+        self.assertEqual('Completed', b.status)
         self.assertGreater(time.time(), b.started)
 
 

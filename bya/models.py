@@ -194,10 +194,25 @@ class Build(object):
 
     @property
     def status(self):
+        status_file = os.path.join(self.build_dir, 'status')
         try:
-            with open(os.path.join(self.build_dir, 'status')) as f:
+            with open(status_file) as f:
                 return f.read().strip()
         except FileNotFoundError:
+            # look at all the runs and figure out a status
+            states = set([x.status for x in self.list_runs()])
+            if Run.RUNNING in states:
+                if Run.FAILED in states:
+                    return 'Running with Failure(s)'
+                return Run.RUNNING
+            if not states - set([Run.PASSED, Run.FAILED]):
+                status = 'Completed'
+                if Run.FAILED in states:
+                    status = 'Completed with Failure(s)'
+                # save state for easier future lookups
+                with open(status_file, 'w') as f:
+                    f.write(status)
+                return status
             return self.QUEUED
         except:
             log.exception('unable to read job state')
