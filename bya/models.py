@@ -49,6 +49,8 @@ class RunQueue(object):
                 return
             run = Run(run)
             run.append_log('# Dequeued to: %s\n' % host)
+            run.get_build().append_to_summary(
+                'Dequeued %s to: %s\n' % (run, host))
             return run
 
 
@@ -80,6 +82,11 @@ class Run(PropsDir):
 
     def log_fd(self, mode='r'):
         return self.open_file('console.log', mode)
+
+    def get_build(self):
+        bdir = os.path.abspath(os.path.join(self.path, '../..'))
+        bnum = os.path.basename(os.path.dirname(os.path.dirname(self.path)))
+        return Build(bnum, bdir)
 
     def get_rundef(self):
         builds = os.path.abspath(os.path.join(self.path, '../..'))
@@ -142,7 +149,7 @@ class Build(object):
         self.name = os.path.basename(os.path.dirname(build_dir))
 
     def append_to_summary(self, msg):
-        with self.summary_fd('w') as f:
+        with self.summary_fd('a') as f:
             f.write('%s UTC: %s\n' % (datetime.datetime.utcnow(), msg))
 
     def summary_fd(self, mode='r'):

@@ -18,7 +18,10 @@ class TestRun(ModelTest):
             'params': {'foo': 'bar', 'bam': 'BAM'},
             'api_key': '1',
         }
-        path = os.path.join(self.tempdir, name)
+        path = os.path.join(self.tempdir, '12/runs')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        path = os.path.join(path, name)
         Run.create(path, data)
         r = Run(path)
         RunQueue.push(r, host_tag)
