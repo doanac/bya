@@ -76,7 +76,11 @@ h3 {
   </thead>
   <tbody>
   {% for b in job.list_builds() %}
-    <tr><td>{{b.number}}</td><td>{{b.status}}</td><td>{{b.started_utc}}</td></tr>
+    <tr><td>
+          <a href="{{url_for('build', name=job.name, jobgroup=jobgroup, build_num=b.number)}}">{{b.number}}</a>
+        </td>
+	<td>{{b.status}}</td><td>{{b.started_utc}}</td>
+    </tr>
   {% endfor %}
   </tbody>
 </table>

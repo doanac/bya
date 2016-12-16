@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+div.summary {
+  font-size: .9em;
+  padding: 0px 8px 0px;
+  margin: 10px 0px;
+  background: #E6F1F6 none repeat scroll 0% 0%;
+  border: 1px solid #C5D5DD;
+  border-radius: 3px;
+}
+table.info td {
+  padding-top: 10px;
+  padding-right: 10px;
+}
+div.source {
+  font-size: .8em;
+  border-radius: 3px;
+  border: 1px solid #C5D5DD;
+  padding-left: 5px;
+}
+.source  { background: #f8f8f8; }
+h3 {
+  margin-bottom: 0px;
+  font-size: 1.1em;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<h2>{{build.name}}</h2>
+  <div class="summary">
+    <table class="info">
+      <tr><td><em>Status</em></td><td>{{build.status}}</td></tr>
+      <tr><td><em>Started</em></td><td>{{build.started_utc}}</td></tr>
+    </table>
+  </div>
+
+<h3>Runs</h3>
+<table class="pure-table pure-table-horizontal pure-table-striped rounded">
+  <thead>
+    <tr><th>Name</th><th>Status</th><th>Container</th><th>Host Tag</th><th>Parameters</th></tr>
+  </thead>
+  <tbody>
+  {% for r in build.list_runs() %}
+    <tr>
+      <td>{{r.name}}</td>
+      <td>{{r.status}}</td><td>{{r.container}}</td><td>{{r.host_tag}}</td>
+      <td>
+      {% for k,v in r.params.items()%}
+        {{k}}={{v}}{% if not loop.last %}, {% endif %}
+      {% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3>Summary</h3>
+<div class="source"><pre>{{build.summary}}</pre></div>
+
+{% endblock %}

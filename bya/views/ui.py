@@ -54,7 +54,18 @@ def job_def(name, jobgroup=None):
     path = name
     if jobgroup:
         path = os.path.join(jobgroup, name)
-    return render_template('job.html', job=jobs.find_jobdef(path))
+    return render_template('job.html', jobgroup=jobgroup,
+                           job=jobs.find_jobdef(path))
+
+
+@app.route('/<name>.job/builds/<int:build_num>/')
+@app.route('/<path:jobgroup>/<name>.job/builds/<int:build_num>/')
+def build(name, build_num, jobgroup=None):
+    path = name
+    if jobgroup:
+        path = os.path.join(jobgroup, name)
+    job = jobs.find_jobdef(path)
+    return render_template('build.html', build=job.get_build(build_num))
 
 
 @app.route('/<path:path>/')

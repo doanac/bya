@@ -181,6 +181,11 @@ class Build(object):
     def summary_fd(self, mode='r'):
         return open(os.path.join(self.build_dir, 'summary.log'), mode)
 
+    @property
+    def summary(self):
+        with self.summary_fd() as f:
+            return f.read()
+
     def _create_runs(self, job, runs):
         path = os.path.join(self.build_dir, 'runs')
         if not os.path.exists(path):
@@ -312,6 +317,13 @@ class JobDefinition(PropsFile):
     def get_last_build(self):
         for b in self.list_builds():
             return b
+
+    def get_build(self, build_num):
+        path = os.path.join(self._get_builds_dir(), str(build_num))
+        if not os.path.isdir(path):
+            raise ModelError(
+                'Build #%d does not exist' % build_num, 404)
+        return Build(build_num, path)
 
     def list_builds(self):
         path = self._get_builds_dir()
