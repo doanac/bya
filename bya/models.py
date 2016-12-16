@@ -232,6 +232,10 @@ class Build(object):
     def started(self):
         return os.stat(self.build_dir).st_ctime
 
+    @property
+    def started_utc(self):
+        return datetime.datetime.fromtimestamp(self.started)
+
     def list_runs(self):
         return Run.list(os.path.join(self.build_dir, 'runs'))
 
