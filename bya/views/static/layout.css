@@ -1,0 +1,12 @@
+/* common layout options */
+a:not(pure-menu-heading){
+  color: blue;
+}
+
+table.rounded {
+  width: 100%;
+  border-radius: 3px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}

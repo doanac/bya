@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<h2>Running</h2>
+{% for build, runs in running.items() %}
+<h4>{{build.name}}</h4>
+  <ul>
+    {% for run in runs %}
+    <li>{{run.name}}</li>
+    {% endfor %}
+  </ul>
+{% endfor %}
+
+<h2>Queued</h2>
+{% for build, runs in queued.items() %}
+<h4>{{build.name}}</h4>
+  <ul>
+    {% for run in runs %}
+    <li>{{run.name}}</li>
+    {% endfor %}
+  </ul>
+{% endfor %}
+
+{% endblock %}

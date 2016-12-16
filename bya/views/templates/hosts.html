@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<h2>Hosts</h2>
+<table class="pure-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Online/Enlisted</th>
+      <th>Tags</th>
+      <th>CPU</th>
+      <th>Concurrent Runs</th>
+      <th>Distro</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for h in hosts %}
+    <tr>
+      <td>{{h.name}}</td>
+      <td>{{h.online}}/{{h.enlisted}}</td>
+      <td>{{h.host_tags}}</td>
+      <td>{{h.cpu_total}} - {{h.cpu_type}}</td>
+      <td>{{h.concurrent_runs}}</td>
+      <td>{{h.distro}}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block body %}
+{% if groups %}
+<h2>Groups</h2>
+<table class="pure-table">
+  <thead>
+    <tr><th>Name</th></tr>
+  </thead>
+  <tbody>
+  {% for g in groups %}
+    <tr>
+      <td><a href="{{url_for('job_group', path=g.name)}}">{{g.name}}</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if jobdefs %}
+<h2>Jobs</h2>
+<table class="pure-table">
+  <thead>
+    <tr><th>Name</th></tr>
+  </thead>
+  <tbody>
+  {% for j in jobdefs %}
+    <tr>
+      <td><a href="{{url_for('job_def', jobgroup=j.jobgroup.name, name=j.name)}}">{{j.name}}</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
