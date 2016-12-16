@@ -63,6 +63,16 @@ class RunQueue(object):
                 os.unlink(e.path)
                 break
 
+    @staticmethod
+    def list_running():
+        for e in os.scandir(settings.RUNNING_DIR):
+            yield Run(os.path.join(settings.QUEUE_DIR, os.readlink(e.path)))
+
+    @staticmethod
+    def list_queued():
+        for e in os.scandir(settings.QUEUE_DIR):
+            yield Run(os.path.join(settings.QUEUE_DIR, os.readlink(e.path)))
+
 
 class Run(PropsDir):
     QUEUED = 'QUEUED'
