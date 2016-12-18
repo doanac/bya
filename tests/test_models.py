@@ -186,6 +186,23 @@ class TestValidator(ModelTest):
             job.create_build(
                 [{'name': 'foo', 'container': 'ubuntu', 'params': p}])
 
+    def test_trigger_git_good(self):
+        self.jobdef['triggers'] = [
+            {'type': 'git', 'http_url': 'foo', 'refs': ['refs/heads/master']},
+        ]
+        p = self._write_job('name', self.jobdef)
+        with open(p) as f:
+            JobDefinition.validate(yaml.load(f.read()))
+
+    def test_trigger_git_bad(self):
+        self.jobdef['triggers'] = [
+            {'type': 'git'},
+        ]
+        p = self._write_job('name', self.jobdef)
+        with self.assertRaisesRegex(ModelError, '"http_url" attribute'):
+            with open(p) as f:
+                JobDefinition.validate(yaml.load(f.read()))
+
 
 class TestAll(ModelTest):
     def setUp(self):

@@ -15,6 +15,7 @@ from bya.lazy import (
     PropsFile,
     StrChoiceProperty,
 )
+from bya.triggers import TriggerProp
 
 log = settings.get_logger()
 
@@ -302,6 +303,7 @@ class JobDefinition(PropsFile):
         Property('secrets', list, required=False),
         ContainersProp(),
         ParamsProp(),
+        TriggerProp(),
     )
 
     def __init__(self, jobgroup, name, jobfile):
