@@ -20,7 +20,8 @@ class ModelTest(TempDirTest):
     def setUp(self):
         super(ModelTest, self).setUp()
         self.mocked_dirs = (
-            'JOBS_DIR', 'BUILDS_DIR', 'QUEUE_DIR', 'RUNNING_DIR', 'HOSTS_DIR')
+            'JOBS_DIR', 'BUILDS_DIR', 'QUEUE_DIR', 'RUNNING_DIR', 'HOSTS_DIR',
+            'TRIGGERS_DIR')
 
         for attr in self.mocked_dirs:
             setattr(self, attr, getattr(settings, attr))

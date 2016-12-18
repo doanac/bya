@@ -1,4 +1,11 @@
+import json
+
+import requests
+
+from bya import settings
 from bya.lazy import ModelError, Property
+
+log = settings.get_logger()
 
 
 class Trigger(object):
@@ -8,6 +15,54 @@ class Trigger(object):
             if not value.get(x):
                 raise ModelError(
                     'Missing attribute "%s" in %s' % (x, value), 400)
+
+
+class GitChecker(object):
+    def __init__(self, job_def, trigger):
+        self.job_def = job_def
+        self.cache = job_def.get_trigger_cache()
+        self.refs = trigger['refs']
+        self.http_url = trigger['http_url']
+
+    def _get_cur_refs(self):
+        try:
+            with open(self.cache) as f:
+                return json.load(f)
+        except:
+            return {}
+
+    def _save_refs(self, refs):
+        with open(self.cache, 'w') as f:
+            json.dump(refs, f)
+
+    def changed(self):
+        url = self.http_url
+        log.info('git-trigger looking for changes to: %s', url)
+        if url[-1] != '/':
+            url += '/'
+        url += 'info/refs?service=git-upload-pack'
+        resp = requests.get(url)
+        if resp.status_code != requests.codes.ok:
+            log.error('git-trigger to check %s for changes: %d %s',
+                      url, resp.status_code, resp.reason)
+            return False
+
+        changed = False
+        refs = self._get_cur_refs()
+        for line in resp.text.splitlines()[2:]:
+            if line == '0000':
+                break
+            log.debug('git-trigger looking at ref: %s', line)
+            sha, ref = line.split(' ', 1)
+            if ref in self.refs:
+                cur = refs.get(ref, '')
+                if cur != sha:
+                    log.info('git-trigger %s %s change %s->%s',
+                             self.http_url, ref, cur, sha)
+                    changed = True
+                    refs[ref] = sha
+        self._save_refs(refs)
+        return changed
 
 
 class GitTrigger(Property):
@@ -30,6 +85,9 @@ class GitTrigger(Property):
                 raise ModelError(
                     'GitTrigger(%s) refs must start with "refs/"', 400)
 
+    def get_checker(self, job_def, trigger):
+        return GitChecker(job_def, trigger)
+
 TRIGGERS = {
     'git': GitTrigger(),
 }
@@ -37,7 +95,7 @@ TRIGGERS = {
 
 class TriggerProp(Property):
     def __init__(self):
-        super(TriggerProp, self).__init__('triggers', list)
+        super(TriggerProp, self).__init__('triggers', list, required=False)
 
     def validate(self, value):
         value = super(TriggerProp, self).validate(value)
@@ -54,3 +112,25 @@ class TriggerProp(Property):
                 raise ModelError(
                     'Trigger(%s) does not exist' % t, 400)
             trigger.validate(v)
+
+            runs = v.get('runs')
+            if not runs or type(runs) != list:
+                raise ModelError(
+                    'Trigger(%s) must include a list or "runs"' % v, 400)
+
+
+class TriggerManager(object):
+    def __init__(self, job_defs):
+        self.job_defs = job_defs
+        self.props_dir = settings.TRIGGERS_DIR
+
+    def run(self):
+        for job_def in self.job_defs:
+            if job_def.triggers:
+                for trigger in job_def.triggers:
+                    t = TRIGGERS[trigger['type']]
+                    checker = t.get_checker(job_def, trigger)
+                    if checker.changed():
+                        b = job_def.create_build(trigger['runs'])
+                        b.append_to_summary(
+                            'Triggered by %s' % trigger['type'])

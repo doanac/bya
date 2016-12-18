@@ -16,6 +16,7 @@ BUILDS_DIR = os.path.join(_here, '../../builds')
 QUEUE_DIR = os.path.join(_here, '../../run-queue')
 RUNNING_DIR = os.path.join(_here, '../../active-runs')
 HOSTS_DIR = os.path.join(_here, '../../hosts')
+TRIGGERS_DIR = os.path.join(_here, '../../triggers')
 
 SECRETS_FILE = os.path.join(_here, '../../secrets.yml')
 

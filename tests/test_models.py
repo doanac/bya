@@ -188,7 +188,12 @@ class TestValidator(ModelTest):
 
     def test_trigger_git_good(self):
         self.jobdef['triggers'] = [
-            {'type': 'git', 'http_url': 'foo', 'refs': ['refs/heads/master']},
+            {
+                'type': 'git',
+                'http_url': 'foo',
+                'refs': ['refs/heads/master'],
+                'runs': [{'name': 'foo', 'container': 'ubuntu'}],
+            },
         ]
         p = self._write_job('name', self.jobdef)
         with open(p) as f:

@@ -251,7 +251,7 @@ class Build(object):
         return Run.list(os.path.join(self.build_dir, 'runs'))
 
     def get_run(self, name):
-        return Run.get(name, os.path.join(self.build_dir, 'runs'))
+        return Run.get(self.name, self.number, name)
 
     def __repr__(self):
         return 'Build(%d)' % self.number
@@ -324,6 +324,9 @@ class JobDefinition(PropsFile):
             if n:
                 name = n + '#' + name
         return os.path.join(settings.BUILDS_DIR, name)
+
+    def get_trigger_cache(self):
+        return os.path.join(self._get_builds_dir(), 'triggers.cache')
 
     def get_last_build(self):
         for b in self.list_builds():
