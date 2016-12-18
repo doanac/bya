@@ -123,19 +123,19 @@ class Run(PropsDir):
         with open(settings.RUNNER_SCRIPT) as f:
             runner = f.read()
 
-        return {
-            'env': self.params,
-            'stdin': jobdef.script,
-            'args': [
-                '--api_key', self.api_key,
-                '--run', self.name,
-                '--build_name', bname,
-                '--build_num', bnum,
-                '--timeout', str(jobdef.timeout),
-                '--container', self.container,
-            ],
-            'runner': runner,
-        }
+        args = [
+            '--api_key', self.api_key,
+            '--run', self.name,
+            '--build_name', bname,
+            '--build_num', bnum,
+            '--timeout', str(jobdef.timeout),
+            '--container', self.container,
+        ]
+        if self.params:
+            for k, v in self.params.items():
+                args.append('--env')
+                args.append('%s=%s' % (k, v))
+        return {'stdin': jobdef.script, 'args': args, 'runner': runner}
 
 
 class Build(object):

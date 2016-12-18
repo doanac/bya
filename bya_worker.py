@@ -112,7 +112,7 @@ class Runner(object):
                 f.write(run['stdin'])
         if os.fork() == 0:
             # TODO close flock?
-            if run['env']:
+            if run.get('env'):
                 for k, v in run['env'].items():
                     os.environ[k] = v
             os.environ['BYA_SERVER'] = config['bya']['server_url']

@@ -108,8 +108,14 @@ def main(args):
             f.write(sys.stdin.read())
             os.fchmod(f.fileno(), 0o555)
         _run_cmd(args, 'timeout', '10m', 'docker', 'pull', args.container)
-        _run_cmd(args, 'timeout', '%sm' % args.timeout, 'docker', 'run', '-v',
-                 '%s:/bya' % os.getcwd(), args.container, '/bya/executable')
+        cmd = ['timeout', '%sm' % args.timeout, 'docker', 'run']
+        if args.env:
+            for env in args.env:
+                cmd.append('-e')
+                cmd.append(env)
+        cmd.extend(
+            ['-v', '%s:/bya' % os.getcwd(), args.container, '/bya/executable'])
+        _run_cmd(args, *cmd)
         _update_status(args, 'PASSED', 'bya_runner completed')
     except:
         stack = traceback.format_exc()
@@ -129,6 +135,7 @@ def get_args(args=None):
     parser.add_argument('--build_num', required=True)
     parser.add_argument('--timeout', required=True)
     parser.add_argument('--container', required=True)
+    parser.add_argument('--env', action='append')
     args = parser.parse_args(args)
     log.setLevel(args.log_level)
     args.bya_server = _get_params().get('BYA_SERVER')
