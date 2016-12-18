@@ -4,7 +4,6 @@ import os
 import shutil
 
 from configparser import ConfigParser
-from unittest.mock import patch
 
 from tests import ModelTest
 
@@ -77,11 +76,9 @@ class WorkerTests(ModelTest):
         self.assertEqual([], list(Host.list()))
         self.assertFalse(os.path.exists(self.worker_dir))
 
-    @patch('os.execv')
-    def test_upgrade(self, execv):
+    def test_upgrade(self):
         self._run_worker(['register', 'mocked', 'badversion', 'tag'])
         self._run_worker(['check'])
-        self.assertTrue(execv.called)
         config_file = os.path.join(self.worker_dir, 'settings.conf')
         config = ConfigParser()
         config.read([config_file])

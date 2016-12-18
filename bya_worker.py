@@ -211,19 +211,18 @@ def _upgrade_worker(args, version):
     config['bya']['version'] = version
     with open(config_file, 'w') as f:
         config.write(f, True)
-    os.execv(script, [script, 'check'])
 
 
 def cmd_check(args):
     '''Check in with server for work'''
     HostProps().update_if_needed(args.server)
     c = args.server.check_in(Runner.get_num_available())
-    if c['worker_version'] != config['bya']['version']:
-        log.warning('Upgrading client to: %s', c['worker_version'])
-        _upgrade_worker(args, c['worker_version'])
     for run in c.get('runs', []):
         log.debug('executing run: %s', run.get('args'))
         Runner.execute(run)
+    if c['worker_version'] != config['bya']['version']:
+        log.warning('Upgrading client to: %s', c['worker_version'])
+        _upgrade_worker(args, c['worker_version'])
 
 
 def main(args):
