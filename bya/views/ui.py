@@ -1,13 +1,16 @@
 import os
 
 from flask import (
-    render_template, request
+    render_template,
+    request,
+    Response,
 )
 from bya import settings
 from bya.models import (
     jobs,
     Host,
     ModelError,
+    Run,
     RunQueue,
 )
 from bya.views import app
@@ -65,7 +68,19 @@ def build(name, build_num, jobgroup=None):
     if jobgroup:
         path = os.path.join(jobgroup, name)
     job = jobs.find_jobdef(path)
-    return render_template('build.html', build=job.get_build(build_num))
+    return render_template('build.html', jobname=name, jobgroup=jobgroup,
+                           build=job.get_build(build_num))
+
+
+@app.route('/<name>.job/builds/<int:build_num>/<run>/')
+@app.route('/<path:jobgroup>/<name>.job/builds/<int:build_num>/<run>/')
+def run(name, build_num, run, jobgroup=None):
+    path = name
+    if jobgroup:
+        path = os.path.join(jobgroup, name)
+    run = Run.get(path, build_num, run)
+    with run.log_fd() as f:
+        return Response(f.read(), mimetype='text/plain')
 
 
 @app.route('/<path:path>/')

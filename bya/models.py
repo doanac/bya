@@ -244,6 +244,9 @@ class Build(object):
     def list_runs(self):
         return Run.list(os.path.join(self.build_dir, 'runs'))
 
+    def get_run(self, name):
+        return Run.get(name, os.path.join(self.build_dir, 'runs'))
+
     def __repr__(self):
         return 'Build(%d)' % self.number
 
