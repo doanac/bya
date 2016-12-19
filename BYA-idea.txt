@@ -80,10 +80,8 @@ Data Model / Layout
  secrets.yml
    # this is place to store things like secret keys/credentials
    # simply a list of:
-   - key: SERVICE_FOO_TOKEN
-     val: Password1
-   - key: BLAH
-     val: password
+   SERVICE_FOO_TOKEN: Password1
+   BLAH:password
 
  job-defs/*.yml
    - this is a git clone of the job defs, a cron job will pull in updates, and

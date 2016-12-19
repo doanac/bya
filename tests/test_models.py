@@ -5,6 +5,7 @@ import yaml
 
 from tests import TempDirTest, ModelTest
 
+from bya import settings
 from bya.models import (
     Build, Host, JobDefinition, JobGroup, ModelError, Run, RunQueue, jobs
 )
@@ -81,6 +82,18 @@ class TestRun(ModelTest):
         d = RunQueue.take('host1', ['tag']).get_rundef()
         self.assertIn(str(self.jobdef['timeout']), d['args'])
         self.assertIn(jobname, d['args'])
+
+    def test_full_run_secrets(self):
+        self.jobdef['secrets'] = ['FOO', 'BLAH']
+        jobname = 'jobname_foo'
+        with open(settings.SECRETS_FILE, 'w') as f:
+            yaml.dump({'FOO': 'BAR'}, f)
+        self._write_job(jobname, self.jobdef)
+        j = jobs.find_jobdef(jobname)
+        j.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        d = RunQueue.take('host1', ['tag']).get_rundef()
+        self.assertEqual('BAR', d['secrets']['FOO'])
+        self.assertEqual('', d['secrets']['BLAH'])
 
 
 class TestBuild(TempDirTest):

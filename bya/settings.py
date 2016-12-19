@@ -17,6 +17,8 @@ QUEUE_DIR = os.path.join(_here, '../../run-queue')
 RUNNING_DIR = os.path.join(_here, '../../active-runs')
 HOSTS_DIR = os.path.join(_here, '../../hosts')
 
+SECRETS_FILE = os.path.join(_here, '../../secrets.yml')
+
 
 def get_logger():
     return logging

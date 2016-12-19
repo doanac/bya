@@ -104,12 +104,23 @@ class Runner(object):
         args = ['./runner'] + run.get('args', [])
         runner = os.path.join(dirname, 'runner')
         stdin = os.path.join(dirname, 'stdin')
+
+        secrets = run.get('secrets')
+        if secrets:
+            secrets_dir = os.path.join(dirname, 'secrets')
+            os.mkdir(secrets_dir)
+            for k, v in secrets.items():
+                with open(os.path.join(secrets_dir, k), 'w') as f:
+                    f.write(v)
+
         with open(runner, 'w') as f:
             f.write(run['runner'])
             os.fchmod(f.fileno(), 0o755)
+
         with open(stdin, 'w') as f:
             if run['stdin']:
                 f.write(run['stdin'])
+
         if os.fork() == 0:
             # TODO close flock?
             if run.get('env'):

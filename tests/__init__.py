@@ -27,6 +27,7 @@ class ModelTest(TempDirTest):
             setattr(settings, attr, os.path.join(self.tempdir, attr))
             os.mkdir(getattr(settings, attr))
 
+        settings.SECRETS_FILE = os.path.join(self.tempdir, 'secrets.yml')
         Host.PROPS_DIR = settings.HOSTS_DIR
 
         self.jobdef = {

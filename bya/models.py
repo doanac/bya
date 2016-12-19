@@ -135,7 +135,12 @@ class Run(PropsDir):
             for k, v in self.params.items():
                 args.append('--env')
                 args.append('%s=%s' % (k, v))
-        return {'stdin': jobdef.script, 'args': args, 'runner': runner}
+        return {
+            'stdin': jobdef.script,
+            'args': args,
+            'runner': runner,
+            'secrets': jobdef.get_secrets(),
+        }
 
 
 class Build(object):
@@ -294,6 +299,7 @@ class JobDefinition(PropsFile):
         Property('description', str),
         Property('timeout', int),
         Property('script', str),
+        Property('secrets', list, required=False),
         ContainersProp(),
         ParamsProp(),
     )
@@ -341,6 +347,15 @@ class JobDefinition(PropsFile):
             if c['image'] == container:
                 return c.get('host_tag')
         raise ValueError('Unknown container: %s' % container)
+
+    def get_secrets(self):
+        secrets = {}
+        if self.secrets and os.path.exists(settings.SECRETS_FILE):
+            with open(settings.SECRETS_FILE) as f:
+                secret_vals = yaml.load(f)
+            for s in self.secrets:
+                secrets[s] = secret_vals.get(s, '')
+        return secrets
 
     def __repr__(self):
         return 'Job(%s)' % self.name
