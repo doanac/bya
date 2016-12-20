@@ -48,9 +48,11 @@ h3 {
       <td><a href="{{url_for('run', name=jobname, jobgroup=jobgropu, build_num=build.number, run=r.name)}}">{{r.name}}</a></td>
       <td>{{r.status}}</td><td>{{r.container}}</td><td>{{r.host_tag}}</td>
       <td>
+      {% if r.params %}
       {% for k,v in r.params.items()%}
         {{k}}={{v}}{% if not loop.last %}, {% endif %}
       {% endfor %}
+      {% endif %}
       </td>
     </tr>
   {% endfor %}
