@@ -20,6 +20,8 @@ TRIGGERS_DIR = os.path.join(_here, '../../triggers')
 
 SECRETS_FILE = os.path.join(_here, '../../secrets.yml')
 
+TRIGGER_INTERVAL = 120  # 120s / every 2 minutes
+
 
 def get_logger():
     return logging

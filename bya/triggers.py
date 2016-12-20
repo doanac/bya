@@ -125,6 +125,7 @@ class TriggerManager(object):
         self.props_dir = settings.TRIGGERS_DIR
 
     def run(self):
+        log.info('Checking triggers')
         for job_def in self.job_defs:
             if job_def.triggers:
                 for trigger in job_def.triggers:
@@ -134,3 +135,28 @@ class TriggerManager(object):
                         b = job_def.create_build(trigger['runs'])
                         b.append_to_summary(
                             'Triggered by %s' % trigger['type'])
+
+
+def main(job_names):
+    import time
+    from bya.models import jobs
+
+    job_defs = []
+    if not job_names:
+        job_defs = list(jobs)
+    else:
+        for name in job_names:
+            job_defs.append(jobs.find_jobdef(name))
+
+    mgr = TriggerManager(job_defs)
+    last_run = 0
+    while True:
+        sleep = settings.TRIGGER_INTERVAL - (time.time() - last_run)
+        if sleep > 0:
+            log.debug('Waiting %d before running again', sleep)
+            time.sleep(sleep)
+        last_run = time.time()
+        mgr.run()
+
+if __name__ == '__main__':
+    main(None)

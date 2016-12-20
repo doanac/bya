@@ -428,6 +428,13 @@ class JobGroup(object):
         self._groups = None
         self._jobs = None
 
+    def __iter__(self):
+        for x in self.get_jobdefs():
+            yield x
+        for group in self.get_groups():
+            for x in group:
+                yield x
+
     @property
     def name(self):
         return '/'.join(self._parents)
