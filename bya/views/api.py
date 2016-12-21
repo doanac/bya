@@ -132,7 +132,7 @@ def host_get(name):
     return jsonify(h._data)
 
 
-@app.route('/api/v1/build/<string:bname>/<int:bnum>/<string:run>',
+@app.route('/api/v1/build/<string:bname>/<int:bnum>/<string:run>/',
            methods=['POST'])
 @run_authenticated
 def run_update(bname, bnum, run):

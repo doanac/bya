@@ -35,8 +35,8 @@ def _post(url, data, headers, retry=1):
 
 def _update_run(args, msg, status=None, retry=2):
     resource = ('api/v1/build/' + args.build_name + '/' + args.build_num +
-                '/' + args.run)
-    url = urllib.parse.urljoin(args.bya_server, resource)
+                '/' + args.run + '/')
+    url = urllib.parse.urljoin(args.bya_server, urllib.parse.quote(resource))
     headers = {
         'content-type': 'text/plain',
         'Authorization': 'Token ' + args.api_key,
