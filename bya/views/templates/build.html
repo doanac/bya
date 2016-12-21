@@ -45,7 +45,7 @@ h3 {
   <tbody>
   {% for r in build.list_runs() %}
     <tr>
-      <td><a href="{{url_for('run', name=jobname, jobgroup=jobgropu, build_num=build.number, run=r.name)}}">{{r.name}}</a></td>
+      <td><a href="{{url_for('run', name=jobname, jobgroup=jobgroup, build_num=build.number, run=r.name)}}">{{r.name}}</a></td>
       <td>{{r.status}}</td><td>{{r.container}}</td><td>{{r.host_tag}}</td>
       <td>
       {% if r.params %}
