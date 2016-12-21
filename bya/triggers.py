@@ -1,4 +1,5 @@
 import json
+import os
 
 import requests
 
@@ -32,6 +33,9 @@ class GitChecker(object):
             return {}
 
     def _save_refs(self, refs):
+        path = os.path.dirname(self.cache)
+        if not os.path.isdir(path):
+            os.mkdir(path)
         with open(self.cache, 'w') as f:
             json.dump(refs, f)
 
