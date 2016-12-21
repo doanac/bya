@@ -93,7 +93,7 @@ class ApiTests(ModelTest):
             ('X-BYA-STATUS', Run.PASSED),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        url = '/api/v1/build/%s/%d/%s/' % (build.name, build.number, run.name)
         self.post_json(url, data, status_code=200, headers=headers)
         run = list(build.list_runs())[0]
         self.assertEqual(Run.PASSED, run.status)
@@ -110,7 +110,7 @@ class ApiTests(ModelTest):
             ('Authorization', 'Token ' + run.api_key),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        url = '/api/v1/build/%s/%d/%s/' % (build.name, build.number, run.name)
         self.post_json(url, data, status_code=200, headers=headers)
         run = list(build.list_runs())[0]
         self.assertEqual(Run.QUEUED, run.status)
@@ -127,7 +127,7 @@ class ApiTests(ModelTest):
             ('Authorization', 'Token badkey'),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        url = '/api/v1/build/%s/%d/%s/' % (build.name, build.number, run.name)
         self.post_json(url, data, status_code=401, headers=headers)
 
     def test_run_no_run(self):
@@ -139,7 +139,7 @@ class ApiTests(ModelTest):
             ('Authorization', 'Token badkey'),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/nosuchrun' % (build.name, build.number)
+        url = '/api/v1/build/%s/%d/nosuchrun/' % (build.name, build.number)
         self.post_json(url, data, status_code=404, headers=headers)
 
     def test_nested_run(self):
@@ -151,7 +151,7 @@ class ApiTests(ModelTest):
             ('Authorization', 'Token ' + run.api_key),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        url = '/api/v1/build/%s/%d/%s/' % (build.name, build.number, run.name)
         self.post_json(url, data, status_code=200, headers=headers)
         run = list(build.list_runs())[0]
         self.assertEqual(Run.QUEUED, run.status)
@@ -169,5 +169,5 @@ class ApiTests(ModelTest):
             ('Authorization', 'Token ' + run.api_key),
         ]
         data = 'logmessage1'
-        url = '/api/v1/build/%s/%d/%s' % (build.name, build.number, run.name)
+        url = '/api/v1/build/%s/%d/%s/' % (build.name, build.number, run.name)
         self.post_json(url, data, status_code=401, headers=headers)
