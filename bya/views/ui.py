@@ -10,7 +10,6 @@ from bya.models import (
     jobs,
     Host,
     ModelError,
-    Run,
     RunQueue,
 )
 from bya.views import app
@@ -78,7 +77,7 @@ def run(name, build_num, run, jobgroup=None):
     path = name
     if jobgroup:
         path = os.path.join(jobgroup, name)
-    run = Run.get(path, build_num, run)
+    run = jobs.find_jobdef(path).get_build(build_num).get_run(run)
     with run.log_fd() as f:
         return Response(f.read(), mimetype='text/plain')
 
