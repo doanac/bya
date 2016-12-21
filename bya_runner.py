@@ -6,6 +6,7 @@ import fcntl
 import logging
 import os
 import select
+import shutil
 import subprocess
 import sys
 import time
@@ -16,6 +17,8 @@ import requests
 
 logging.basicConfig()
 log = logging.getLogger('bya-runner')
+
+RUNNER_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def _get_params():
@@ -122,7 +125,8 @@ def main(args):
         log.error(stack)
         _update_status(args, 'FAILED', 'bya_runner failed with: %s' % stack)
     finally:
-        pass  # TODO remove directory we ran from
+        if not args.keep_dir:
+            shutil.rmtree(RUNNER_DIR)
 
 
 def get_args(args=None):
@@ -135,6 +139,7 @@ def get_args(args=None):
     parser.add_argument('--build_num', required=True)
     parser.add_argument('--timeout', required=True)
     parser.add_argument('--container', required=True)
+    parser.add_argument('--keep-dir', action='store_true', required=False)
     parser.add_argument('--env', action='append')
     args = parser.parse_args(args)
     log.setLevel(args.log_level)

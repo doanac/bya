@@ -42,7 +42,7 @@ class RunnerTests(ModelTest):
         j.create_build([{'name': 'foo', 'container': 'busybox'}])
         self.run = RunQueue.take('host1', ['tag'])
         self.rundef = self.run.get_rundef()
-        self.args = []
+        self.args = ['--keep-dir']
         for arg in self.rundef['args']:
             self.args.append(arg)
 

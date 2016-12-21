@@ -100,7 +100,9 @@ class Runner(object):
 
     @classmethod
     def execute(clazz, run):
-        dirname = tempfile.mkdtemp(dir=os.path.dirname(script))
+        if not os.path.exists(clazz.RUNS_DIR):
+            os.mkdir(clazz.RUNS_DIR)
+        dirname = tempfile.mkdtemp(dir=clazz.RUNS_DIR)
         args = ['./runner'] + run.get('args', [])
         runner = os.path.join(dirname, 'runner')
         stdin = os.path.join(dirname, 'stdin')
