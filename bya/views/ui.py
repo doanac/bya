@@ -42,6 +42,8 @@ def queues():
     queued = {}
     for run in RunQueue.list_running():
         b = run.get_build()
+        run.jobname = b.name.replace('#', '/')
+        run.buildnum = b.number
         running.setdefault(b, []).append(run)
     for run in RunQueue.list_queued():
         b = run.get_build()

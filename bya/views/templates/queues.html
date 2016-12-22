@@ -7,7 +7,7 @@
 <h4>{{build.name}}</h4>
   <ul>
     {% for run in runs %}
-    <li>{{run.name}}</li>
+      <li><a href="{{url_for('run', name=run.jobname, build_num=run.buildnum, run=run.name)}}">{{run.name}}</a></li>
     {% endfor %}
   </ul>
 {% endfor %}
