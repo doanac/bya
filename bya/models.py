@@ -449,7 +449,7 @@ class JobGroup(object):
             if entry.is_file() and entry.name.endswith('.yml'):
                 self._jobs.append(
                     JobDefinition(self, entry.name[:-4], entry.path))
-            elif entry.is_dir():
+            elif entry.is_dir() and entry.name != '.git':
                 self._groups.append(JobGroup(self._parents + [entry.name]))
 
     def get_groups(self):
