@@ -440,6 +440,8 @@ class JobGroup(object):
         return '/'.join(self._parents)
 
     def _list(self):
+        # TODO this logic isn't working under gunicorn
+        # need a better API for accessing jobs and groups
         if self._jobs is not None:  # already loaded
             return
         self._groups = []

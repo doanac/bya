@@ -145,6 +145,8 @@ def main(job_names):
     import time
     from bya.models import jobs
 
+    # TODO - need to reload job-defs somehow. Maybe via git hooks?
+
     job_defs = []
     if not job_names:
         job_defs = list(jobs)
