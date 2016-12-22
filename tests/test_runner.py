@@ -1,6 +1,7 @@
 import importlib.util
 import os
 import shutil
+import unittest
 
 from unittest.mock import patch
 
@@ -57,6 +58,8 @@ class RunnerTests(ModelTest):
             finally:
                 os.chdir(cwd)
 
+    @unittest.skipIf(not os.path.exists('/usr/bin/docker'),
+                     'docker is not installed')
     def test_simple(self):
         self._exec(self.args, "#!/bin/sh\necho hello world\n")
         run = Run(self.run.path)
