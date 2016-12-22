@@ -22,6 +22,20 @@ SECRETS_FILE = os.path.join(_here, '../../secrets.yml')
 
 TRIGGER_INTERVAL = 120  # 120s / every 2 minutes
 
+logging.bya_initialized = False
+
+
+def _init_logging():
+    if DEBUG:
+        level = 'DEBUG'
+    else:
+        level = 'INFO'
+    logging.basicConfig(level=level)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.bya_initialized = True
+
 
 def get_logger():
+    if not logging.bya_initialized:
+        _init_logging()
     return logging
