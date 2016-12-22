@@ -106,6 +106,10 @@ class WorkerTests(ModelTest):
     def test_getrun(self):
         self._create_run()
         self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+        # register the host
+        host = self.worker.HostProps().data['name']
+        Host.get(host).update(enlisted=True)
+
         self.hits = 0
 
         def run(run):
@@ -117,6 +121,9 @@ class WorkerTests(ModelTest):
     def test_noruns(self):
         self._create_run()
         self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+        # register the host
+        host = self.worker.HostProps().data['name']
+        Host.get(host).update(enlisted=True)
 
         # fake out a full number of concurrent runs
         p = os.path.join(self.worker_dir, 'runs')
@@ -134,6 +141,11 @@ class WorkerTests(ModelTest):
     def test_execute_run(self):
         self._create_run()
         self._run_worker(['register', 'mocked', self.worker_version, 'tag'])
+
+        # register the host
+        host = self.worker.HostProps().data['name']
+        Host.get(host).update(enlisted=True)
+
         self.hits = 0
 
         def run(run):

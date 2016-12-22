@@ -119,7 +119,7 @@ def host_get(name):
     h = Host.get(name)
     h.cpu_type  # force data to be loaded
     h._data['worker_version'] = str(os.stat(settings.WORKER_SCRIPT).st_mtime)
-    if _is_host_authenticated(h):
+    if _is_host_authenticated(h) and h.enlisted:
         h.ping()
         avail = int(request.args.get('available_runners'))
         if avail > 0:
