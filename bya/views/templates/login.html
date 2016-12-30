@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<style>
+.error{
+  color: #D8000C;
+  background-color: #FFBABA;
+  border: 1px solid #D8000C;
+  padding: 10px;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+
+<h2>Log In</h2>
+<form class="pure-form" action="" method="post">
+  <fieldset>
+    <input type="text" placeholder="Username" name="user">
+    <input type="password" placeholder="Password" name="password">
+
+    <button type="submit" class="pure-button pure-button-primary">Login</button>
+  </fieldset>
+</form>
+
+{% if error %}
+<p class="error"><strong>Error:</strong> {{ error }}
+{% endif %}
+{% endblock %}

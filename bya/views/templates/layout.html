@@ -14,6 +14,16 @@
     padding-left: 2em;
     padding-right: 2em;
 }
+
+.flashes {
+	border-radius: 3px;
+	color: #31708f;
+	background-color: #d9edf7;
+	border-color: #bce8f1;
+}
+.flashes ul {
+  padding: 10px 10px 10px 20px;
+}
     </style>
     {% block head %}
     {% endblock %}
@@ -41,7 +51,11 @@
     <div class="pure-u-1 pure-u-md-1-5">
         <div class="pure-menu pure-menu-horizontal custom-menu-3 custom-can-transform">
             <ul class="pure-menu-list">
-                <li class="pure-menu-item"><a href="#" class="pure-menu-link">About</a></li>
+              {% if current_user.is_authenticated %}
+                <li class="pure-menu-item"><a href="{{url_for('logout')}}" class="pure-menu-link">Log Out({{current_user.id}})</a></li>
+              {% else %}
+                <li class="pure-menu-item"><a href="{{url_for('login')}}" class="pure-menu-link">Log In</a></li>
+              {% endif %}
             </ul>
         </div>
     </div>
@@ -49,6 +63,18 @@
 <script type="text/javascript" src="{{url_for('static', filename='menu.js')}}"></script>
 
 <div class="main">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flashes">
+      <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  {% endwith %}
+
   {% block body %}{% endblock %}
 </div> <!-- main -->
 </body>

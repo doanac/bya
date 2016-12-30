@@ -8,6 +8,16 @@ RUNNER_SCRIPT = os.path.join(_here, '../bya_runner.py')
 
 DEBUG = os.environ.get('DEBUG', '0')
 DEBUG = bool(int(DEBUG))
+if DEBUG:
+    SECRET_KEY = 'UNSAFE FOR PRODUCTION'
+else:
+    try:
+        with open(os.path.join(_here, '../../flask_secret')) as f:
+            SECRET_KEY = f.read()
+    except:
+        SECRET_KEY = os.urandom(24)
+        with open(os.path.join(_here, '../../flask_secret'), 'wb') as f:
+            f.write(SECRET_KEY)
 
 AUTO_ENLIST_HOSTS = False
 
