@@ -423,7 +423,7 @@ class JobDefinition(PropsFile):
         self._validate_runs(runs)
         return Build.create(self, runs)
 
-    def rebuild(self, build):
+    def rebuild(self, build, user='unknown'):
         runs = []
         for run in build.list_runs():
             runs.append({
@@ -431,7 +431,10 @@ class JobDefinition(PropsFile):
                 'params': run.params or {},
                 'container': run.container,
             })
-        return self.create_build(runs)
+        b = self.create_build(runs)
+        b.append_to_summary(
+            '%s triggered rebuild of: %d' % (user, build.numer))
+        return b
 
 
 class JobGroup(object):

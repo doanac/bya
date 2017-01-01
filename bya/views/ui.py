@@ -81,7 +81,7 @@ def build(name, build_num, jobgroup=None):
     if request.method == 'POST':
         if not can_rebuild:
             abort(401)
-        job.rebuild(build)
+        job.rebuild(build, current_user.id)
         flash('Queued: %s' % build.name)
         return redirect('queues')
 
