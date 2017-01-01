@@ -362,6 +362,10 @@ class JobDefinition(PropsFile):
                 secrets[s] = secret_vals.get(s, '')
         return secrets
 
+    def can_rebuild(self, user):
+        # TODO enforce job-level permissions
+        return user.is_authenticated
+
     def __repr__(self):
         return 'Job(%s)' % self.name
 
@@ -418,6 +422,16 @@ class JobDefinition(PropsFile):
     def create_build(self, runs):
         self._validate_runs(runs)
         return Build.create(self, runs)
+
+    def rebuild(self, build):
+        runs = []
+        for run in build.list_runs():
+            runs.append({
+                'name': run.name,
+                'params': run.params or {},
+                'container': run.container,
+            })
+        return self.create_build(runs)
 
 
 class JobGroup(object):

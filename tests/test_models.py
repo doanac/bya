@@ -95,6 +95,18 @@ class TestRun(ModelTest):
         self.assertEqual('BAR', d['secrets']['FOO'])
         self.assertEqual('', d['secrets']['BLAH'])
 
+    def test_rebuild(self):
+        jobname = 'jobname_foo'
+        self._write_job(jobname, self.jobdef)
+        j = jobs.find_jobdef(jobname)
+        b = j.create_build([{'name': 'foo', 'container': 'ubuntu'}])
+        d = RunQueue.take('host1', ['tag']).get_rundef()
+        self.assertIn(jobname, d['args'])
+
+        j.rebuild(b)
+        d = RunQueue.take('host1', ['tag']).get_rundef()
+        self.assertIn(jobname, d['args'])
+
 
 class TestBuild(TempDirTest):
     def test_build(self):

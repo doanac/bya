@@ -1,10 +1,15 @@
 import os
 
 from flask import (
+    abort,
+    flash,
+    redirect,
     render_template,
     request,
     Response,
 )
+from flask_login import current_user
+
 from bya import settings
 from bya.models import (
     jobs,
@@ -62,15 +67,26 @@ def job_def(name, jobgroup=None):
                            job=jobs.find_jobdef(path))
 
 
-@app.route('/<name>.job/builds/<int:build_num>/')
-@app.route('/<path:jobgroup>/<name>.job/builds/<int:build_num>/')
+@app.route('/<name>.job/builds/<int:build_num>/', methods=['GET', 'POST'])
+@app.route('/<path:jobgroup>/<name>.job/builds/<int:build_num>/',
+           methods=['GET', 'POST'])
 def build(name, build_num, jobgroup=None):
     path = name
     if jobgroup:
         path = os.path.join(jobgroup, name)
     job = jobs.find_jobdef(path)
+    build = job.get_build(build_num)
+    can_rebuild = job.can_rebuild(current_user)
+
+    if request.method == 'POST':
+        if not can_rebuild:
+            abort(401)
+        job.rebuild(build)
+        flash('Queued: %s' % build.name)
+        return redirect('queues')
+
     return render_template('build.html', jobname=name, jobgroup=jobgroup,
-                           build=job.get_build(build_num))
+                           build=build, can_rebuild=can_rebuild)
 
 
 @app.route('/<name>.job/builds/<int:build_num>/<run>/')
