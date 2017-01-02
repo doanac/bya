@@ -3,8 +3,6 @@ import os
 import random
 import string
 
-from operator import attrgetter
-
 import yaml
 
 from bya import settings
@@ -340,10 +338,17 @@ class JobDefinition(PropsFile):
         return Build(build_num, path)
 
     def list_builds(self):
+        def keyfunction(x):
+            try:
+                v = int(x.name)
+                return '%08d' % v
+            except:
+                return x.name
+
         path = self._get_builds_dir()
         if os.path.exists(path):
             listing = os.scandir(path)
-            for entry in sorted(listing, key=attrgetter('name'), reverse=True):
+            for entry in sorted(listing, key=keyfunction, reverse=True):
                 if entry.is_dir():
                     yield(Build(entry.name, entry.path))
 
