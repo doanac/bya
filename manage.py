@@ -45,6 +45,23 @@ def _gunicorn(args):
     runner.do_action()
 
 
+def _triggers(args):
+    class App():
+        def __init__(self):
+            self.stdin_path = '/dev/null'
+            self.stdout_path = args.log
+            self.pidfile_path = args.pid
+            self.pidfile_timeout = 5
+
+        def run(self):
+            from bya.triggers import main
+            main(None)
+
+    app = App()
+    runner = SmartDaemonRunner(app, [sys.argv[0], args.action])
+    runner.do_action()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Manage BYA application')
@@ -67,6 +84,12 @@ def main():
     p.add_argument('-w', '--workers', type=int, default=1)
     p.add_argument('action', choices=('start', 'stop', 'restart', 'status'))
     p.set_defaults(func=_gunicorn)
+
+    p = sub.add_parser('triggers', help='Run bya triggers daemon')
+    p.add_argument('--log', default='/tmp/bya-triggers.log')
+    p.add_argument('--pid', default='/tmp/bya-triggers.pid')
+    p.add_argument('action', choices=('start', 'stop', 'restart', 'status'))
+    p.set_defaults(func=_triggers)
 
     args = parser.parse_args()
     if getattr(args, 'func', None):
