@@ -1,5 +1,9 @@
 from daemon import DaemonContext
-from daemon.runner import DaemonRunner, make_pidlockfile
+from daemon.runner import (
+    DaemonRunner,
+    DaemonRunnerStopFailureError,
+    make_pidlockfile,
+)
 
 # There are 2 bugs in the base class:
 #  open in write mode won't accept "buffering=0" in python3
@@ -24,11 +28,15 @@ class SmartDaemonRunner(DaemonRunner):
                 app.pidfile_path, app.pidfile_timeout)
         self.daemon_context.pidfile = self.pidfile
 
-    def _smart_restart(self):
-        """ Stop, then start.
-            """
-        if self.pidfile.is_locked():
+    def _smart_stop(self):
+        # don't fail if not running
+        try:
             self._stop()
+        except DaemonRunnerStopFailureError as e:
+            print(e)
+
+    def _smart_restart(self):
+        self._smart_stop()
         self._start()
 
     def _status(self):
@@ -39,7 +47,7 @@ class SmartDaemonRunner(DaemonRunner):
 
     action_funcs = {
         'start': DaemonRunner._start,
-        'stop': DaemonRunner._stop,
+        'stop': _smart_stop,
         'restart': _smart_restart,
         'status': _status,
     }
