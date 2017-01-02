@@ -2,11 +2,12 @@
 import argparse
 import sys
 
+from bya.daemon import SmartDaemonRunner
 from bya.models import ModelError, jobs
 from bya.views import app
 
 
-def _run(args):
+def _dev_server(args):
     app.run(args.host, args.port)
 
 
@@ -19,19 +20,53 @@ def _validate_jobdef(args):
         sys.exit(e)
 
 
+def _gunicorn(args):
+    cmd = [
+        'gunicorn',
+        '-w', str(args.workers),
+        '-b', '%s:%d' % (args.host, args.port),
+        'bya.views:app',
+    ]
+
+    class App():
+        def __init__(self):
+            self.stdin_path = '/dev/null'
+            self.stdout_path = args.log
+            self.pidfile_path = args.pid
+            self.pidfile_timeout = 5
+
+        def run(self):
+            from gunicorn.app.wsgiapp import run
+            sys.argv = cmd
+            sys.exit(run())
+
+    app = App()
+    runner = SmartDaemonRunner(app, [sys.argv[0], args.action])
+    runner.do_action()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Manage BYA application')
 
     sub = parser.add_subparsers(title='Commands', metavar='')
-    p = sub.add_parser('runserver', help='Run webserver')
+    p = sub.add_parser('devserver', help='Run development webserver')
     p.add_argument('--host', default='0.0.0.0')
     p.add_argument('-p', '--port', type=int, default=8000)
-    p.set_defaults(func=_run)
+    p.set_defaults(func=_dev_server)
 
     p = sub.add_parser('validate-jobdef', help='Validate a job-defintion')
     p.add_argument('jobdef')
     p.set_defaults(func=_validate_jobdef)
+
+    p = sub.add_parser('gunicorn', help='Run gunicorn daemon')
+    p.add_argument('--log', default='/tmp/bya-gunicorn.log')
+    p.add_argument('--pid', default='/tmp/bya-gunicorn.pid')
+    p.add_argument('--host', default='0.0.0.0')
+    p.add_argument('-p', '--port', type=int, default=8000)
+    p.add_argument('-w', '--workers', type=int, default=1)
+    p.add_argument('action', choices=('start', 'stop', 'restart', 'status'))
+    p.set_defaults(func=_gunicorn)
 
     args = parser.parse_args()
     if getattr(args, 'func', None):

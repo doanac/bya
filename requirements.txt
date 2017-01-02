@@ -4,3 +4,4 @@ python-pam==1.8.2
 PyYaml
 requests
 gunicorn
+python-daemon-3K
