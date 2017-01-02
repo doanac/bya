@@ -433,7 +433,7 @@ class JobDefinition(PropsFile):
             })
         b = self.create_build(runs)
         b.append_to_summary(
-            '%s triggered rebuild of: %d' % (user, build.numer))
+            '"%s" triggered rebuild of: %d' % (user, build.number))
         return b
 
 
