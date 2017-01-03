@@ -17,8 +17,14 @@ from bya.models import (
     ModelError,
     RunQueue,
 )
+from bya.version import VERSION
 from bya.views import app
 CSS_ACTIVE = 'pure-menu-selected'
+
+
+@app.context_processor
+def inject_version():
+    return dict(bya_revno=VERSION)
 
 
 @app.errorhandler(ModelError)
