@@ -139,7 +139,7 @@ class TriggerManager(object):
                         props['BYA_TRIGGER'] = trigger['type']
                         b = job_def.create_build(trigger['runs'], props)
                         b.append_to_summary(
-                            'Triggered by %s' % trigger['type'])
+                            'Triggered by %s: %r' % (trigger['type'], props))
 
 
 def main(job_names):
