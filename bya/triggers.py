@@ -51,11 +51,11 @@ class GitChecker(object):
                       url, resp.status_code, resp.reason)
             return False
 
-        changed = False
         refs = self._get_cur_refs()
         for line in resp.text.splitlines()[2:]:
             if line == '0000':
                 break
+            line = line[4:]  # strip off git protocol stuff
             log.debug('git-trigger looking at ref: %s', line)
             sha, ref = line.split(' ', 1)
             if ref in self.refs:
@@ -63,10 +63,9 @@ class GitChecker(object):
                 if cur != sha:
                     log.info('git-trigger %s %s change %s->%s',
                              self.http_url, ref, cur, sha)
-                    changed = True
                     refs[ref] = sha
-        self._save_refs(refs)
-        return changed
+                    self._save_refs(refs)
+                    return {'GIT_REF': ref, 'GIT_OLD_SHA': cur, 'GIT_SHA': sha}
 
 
 class GitTrigger(Property):
@@ -135,8 +134,10 @@ class TriggerManager(object):
                 for trigger in job_def.triggers:
                     t = TRIGGERS[trigger['type']]
                     checker = t.get_checker(job_def, trigger)
-                    if checker.changed():
-                        b = job_def.create_build(trigger['runs'])
+                    props = checker.changed()
+                    if props is not None:
+                        props['BYA_TRIGGER'] = trigger['type']
+                        b = job_def.create_build(trigger['runs'], props)
                         b.append_to_summary(
                             'Triggered by %s' % trigger['type'])
 

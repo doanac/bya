@@ -39,3 +39,8 @@ ignore
         b = self.job.get_last_build()
         r = b.get_run('foo')
         self.assertEqual('ubuntu', r.container)
+        self.assertEqual('git', r.params['BYA_TRIGGER'])
+        self.assertEqual('refs/heads/master', r.params['GIT_REF'])
+        self.assertEqual('', r.params['GIT_OLD_SHA'])
+        self.assertEqual(
+            '15f12d4181355604efa7b429fc3bcbae08d27f40', r.params['GIT_SHA'])

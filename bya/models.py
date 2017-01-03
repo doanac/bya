@@ -424,8 +424,11 @@ class JobDefinition(PropsFile):
         if errors:
             raise ModelError('\n'.join(errors), 400)
 
-    def create_build(self, runs):
+    def create_build(self, runs, trigger_data=None):
         self._validate_runs(runs)
+        if trigger_data:
+            for run in runs:
+                run['params'].update(trigger_data)
         return Build.create(self, runs)
 
     def rebuild(self, build, user='unknown'):
