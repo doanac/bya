@@ -220,6 +220,28 @@ class TestValidator(ModelTest):
             with open(p) as f:
                 JobDefinition.validate(yaml.load(f.read()))
 
+    def test_notify_email_good(self):
+        self.jobdef['notify'] = [
+            {
+                'type': 'email',
+                'users': ['1@foo.com'],
+            },
+        ]
+        p = self._write_job('name', self.jobdef)
+        with open(p) as f:
+            JobDefinition.validate(yaml.load(f.read()))
+
+    def test_notify_email_bad(self):
+        self.jobdef['notify'] = [
+            {
+                'type': 'email',
+            },
+        ]
+        p = self._write_job('name', self.jobdef)
+        with self.assertRaisesRegex(ModelError, '"users" attribute'):
+            with open(p) as f:
+                JobDefinition.validate(yaml.load(f.read()))
+
 
 class TestAll(ModelTest):
     def setUp(self):

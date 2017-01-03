@@ -13,6 +13,7 @@ from bya.lazy import (
     PropsFile,
     StrChoiceProperty,
 )
+from bya.notifications import NotifyProp
 from bya.triggers import TriggerProp
 
 log = settings.get_logger()
@@ -302,6 +303,7 @@ class JobDefinition(PropsFile):
         ContainersProp(),
         ParamsProp(),
         TriggerProp(),
+        NotifyProp(),
     )
 
     def __init__(self, jobgroup, name, jobfile):

@@ -38,6 +38,10 @@ Each "build" is defined by a job definition which is YAML like:
    - name: foobar
  secrets:
    - SERVICE_FOO_TOKEN  # see secrets.yml below
+ notify:
+   - type: email
+     users:
+     - 1@example.com
  script: |
    # the contents are executed under a bash shell
    git clone https://myrepo.com/repo
