@@ -25,7 +25,7 @@ class EmailNotify(Property):
         msg = MIMEText(body)
         msg['Subject'] = subject
         msg['From'] = settings.EMAIL_NOTIFY_FROM
-        msg['To'] = addrs
+        msg['To'] = ', '.join(addrs)
 
         s = smtplib.SMTP('localhost')
         s.send_message(msg)
