@@ -1,3 +1,7 @@
+import smtplib
+
+from email.mime.text import MIMEText
+
 from bya import settings
 from bya.lazy import ModelError, Property
 
@@ -16,6 +20,23 @@ class EmailNotify(Property):
         if not value.get('users'):
             raise ModelError(
                 'EmailNotify(%s) must include a "users" attribute' % v, 400)
+
+    def send_mail(self, addrs, subject, body):
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = settings.EMAIL_NOTIFY_FROM
+        msg['To'] = addrs
+
+        s = smtplib.SMTP('localhost')
+        s.send_message(msg)
+        s.quit()
+
+    def notify(self, props, jobdef, build, status):
+        subject = 'BYA Build: %s #%d: %s' % (jobdef.name, build.number, status)
+        url = '= https://%s/%s.job/builds/%s/' % (
+            settings.SERVER_NAME, build.name.replace('#', '/'), build.number)
+        body = '%s\n%s\n' % (url, build.summary)
+        self.send_mail(props['users'], subject, body)
 
 
 NOTIFIERS = {
@@ -42,3 +63,10 @@ class NotifyProp(Property):
                 raise ModelError(
                     'Notify(%s) does not exist' % t, 400)
             notifier.validate(v)
+
+    @staticmethod
+    def notify_build(jobdef, build, status):
+        notifiers = jobdef.notify or []
+        for x in notifiers:
+            if not x.get('only_failures') or status != 'Completed':
+                NOTIFIERS[x['type']].notify(x, jobdef, build, status)

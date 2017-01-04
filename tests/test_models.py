@@ -1,6 +1,8 @@
 import os
 import time
 
+from unittest.mock import patch
+
 import yaml
 
 from tests import TempDirTest, ModelTest
@@ -39,7 +41,8 @@ class TestRun(ModelTest):
         with r.log_fd() as f:
             self.assertIn('hello world\nhello world', f.read())
 
-    def test_status(self):
+    @patch('bya.models.Build._notify')
+    def test_status(self, notify):
         r = self._create('foo')
         r.update(status='PASSED')
         r = Run(r.path)
@@ -109,7 +112,8 @@ class TestRun(ModelTest):
 
 
 class TestBuild(TempDirTest):
-    def test_build(self):
+    @patch('bya.models.Build._notify')
+    def test_build(self, notify):
         b = Build(12, self.tempdir)
         os.mkdir(os.path.join(self.tempdir, 'runs'))
         b.append_to_summary('hello there')

@@ -101,6 +101,8 @@ class Run(PropsDir):
         status = kwargs.get('status')
         if status in (Run.FAILED, Run.PASSED):
             RunQueue.complete(self, status)
+            # force build into updating status if all runs have completed
+            self.get_build().status
 
     def append_log(self, msg):
         with self.log_fd('a') as f:
@@ -212,6 +214,10 @@ class Build(object):
             Run.create(rp, data)
             RunQueue.push(Run(rp), host_tag)
 
+    def _notify(self, status):
+        jobdef = jobs.find_jobdef(self.name.replace('#', '/'))
+        NotifyProp.notify_build(jobdef, self, status)
+
     @property
     def status(self):
         status_file = os.path.join(self.build_dir, 'status')
@@ -232,6 +238,7 @@ class Build(object):
                 # save state for easier future lookups
                 with open(status_file, 'w') as f:
                     f.write(status)
+                self._notify(status)
                 return status
             return self.QUEUED
         except:
