@@ -69,8 +69,20 @@ def job_def(name, jobgroup=None):
     path = name
     if jobgroup:
         path = os.path.join(jobgroup, name)
-    return render_template('job.html', jobgroup=jobgroup,
-                           job=jobs.find_jobdef(path))
+    job = jobs.find_jobdef(path)
+    builds = []
+    limit = int(request.args.get('limit', '20'))
+    start = int(request.args.get('start', '0'))
+    nstart = 0
+    for i, b in enumerate(job.list_builds()):
+        if i >= start:
+            if i < limit + start:
+                builds.append(b)
+            else:
+                nstart = i
+                break
+    return render_template(
+        'job.html', start=nstart, jobgroup=jobgroup, job=job, builds=builds)
 
 
 @app.route('/<name>.job/builds/<int:build_num>/', methods=['GET', 'POST'])

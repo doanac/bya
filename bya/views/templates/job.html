@@ -75,13 +75,16 @@ h3 {
     <tr><th>Number</th><th>Status</th><th>Started On</th></tr>
   </thead>
   <tbody>
-  {% for b in job.list_builds() %}
+  {% for b in builds %}
     <tr><td>
           <a href="{{url_for('build', name=job.name, jobgroup=jobgroup, build_num=b.number)}}">{{b.number}}</a>
         </td>
 	<td>{{b.status}}</td><td>{{b.started_utc}}</td>
     </tr>
   {% endfor %}
+  {% if start %}
+    <tr><td colspan=3><a href="?start={{start}}">Next</a></td></tr>
+  {% endif %}
   </tbody>
 </table>
 
