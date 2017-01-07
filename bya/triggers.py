@@ -1,3 +1,4 @@
+import fnmatch
 import json
 import os
 
@@ -28,9 +29,9 @@ class GitChecker(object):
     def _get_cur_refs(self):
         try:
             with open(self.cache) as f:
-                return json.load(f)
+                return False, json.load(f)
         except:
-            return {}
+            return True, {}
 
     def _save_refs(self, refs):
         path = os.path.dirname(self.cache)
@@ -51,23 +52,24 @@ class GitChecker(object):
                       url, resp.status_code, resp.reason)
             return False
 
-        refs = self._get_cur_refs()
+        first_run, refs = self._get_cur_refs()
         for line in resp.text.splitlines()[2:]:
             if line == '0000':
                 break
             line = line[4:]  # strip off git protocol stuff
             log.debug('git-trigger looking at ref: %s', line)
             sha, ref = line.split(' ', 1)
-            if ref in self.refs:
-                # just default to the current sha the first time we discover
-                # a new ref. ie - only trigger builds for *new* changes
-                cur = refs.get(ref, sha)
-                if cur != sha:
-                    log.info('git-trigger %s %s change %s->%s',
-                             self.http_url, ref, cur, sha)
-                    refs[ref] = sha
-                    self._save_refs(refs)
-                    return {'GIT_REF': ref, 'GIT_OLD_SHA': cur, 'GIT_SHA': sha}
+            for pattern in self.refs:
+                if fnmatch.fnmatch(ref, pattern):
+                    cur = refs.get(ref)
+                    if cur != sha:
+                        refs[ref] = sha
+                        self._save_refs(refs)
+                        if not first_run:
+                            log.info('git-trigger %s %s change %s->%s',
+                                     self.http_url, ref, cur, sha)
+                            return {'GIT_REF': ref,
+                                    'GIT_OLD_SHA': cur, 'GIT_SHA': sha}
 
 
 class GitTrigger(Property):
