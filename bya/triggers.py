@@ -59,7 +59,9 @@ class GitChecker(object):
             log.debug('git-trigger looking at ref: %s', line)
             sha, ref = line.split(' ', 1)
             if ref in self.refs:
-                cur = refs.get(ref, '')
+                # just default to the current sha the first time we discover
+                # a new ref. ie - only trigger builds for *new* changes
+                cur = refs.get(ref, sha)
                 if cur != sha:
                     log.info('git-trigger %s %s change %s->%s',
                              self.http_url, ref, cur, sha)
