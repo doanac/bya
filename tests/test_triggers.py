@@ -43,11 +43,12 @@ ignore
         b = self.job.get_last_build()
         r = b.get_run('foo')
         self.assertEqual('ubuntu', r.container)
-        self.assertEqual('git', r.params['BYA_TRIGGER'])
-        self.assertEqual('refs/heads/master', r.params['GIT_REF'])
-        self.assertEqual('oldvalue', r.params['GIT_OLD_SHA'])
+        td = r.get_build().trigger_data
+        self.assertEqual('git', td['BYA_TRIGGER'])
+        self.assertEqual('refs/heads/master', td['GIT_REF'])
+        self.assertEqual('oldvalue', td['GIT_OLD_SHA'])
         self.assertEqual(
-            '15f12d4181355604efa7b429fc3bcbae08d27f40', r.params['GIT_SHA'])
+            '15f12d4181355604efa7b429fc3bcbae08d27f40', td['GIT_SHA'])
 
     @patch('requests.get')
     def test_match(self, http_get):
@@ -68,8 +69,9 @@ ignore
         b = self.job.get_last_build()
         r = b.get_run('foo')
         self.assertEqual('ubuntu', r.container)
-        self.assertEqual('git', r.params['BYA_TRIGGER'])
-        self.assertEqual('refs/pull/123/head', r.params['GIT_REF'])
-        self.assertEqual('oldvalue', r.params['GIT_OLD_SHA'])
+        td = r.get_build().trigger_data
+        self.assertEqual('git', td['BYA_TRIGGER'])
+        self.assertEqual('refs/pull/123/head', td['GIT_REF'])
+        self.assertEqual('oldvalue', td['GIT_OLD_SHA'])
         self.assertEqual(
-            '15f12d4181355604efa7b429fc3bcbae08d27f41', r.params['GIT_SHA'])
+            '15f12d4181355604efa7b429fc3bcbae08d27f41', td['GIT_SHA'])

@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import random
 import string
@@ -116,6 +117,15 @@ class Run(PropsDir):
         bnum = os.path.basename(os.path.dirname(os.path.dirname(self.path)))
         return Build(bnum, bdir)
 
+    def _get_params(self):
+        params = {}
+        if self.params:
+            for k, v in self.params:
+                params[k] = v
+        for k, v in self.get_build().trigger_data:
+            params[k] = v
+        return params
+
     def get_rundef(self):
         builds = os.path.abspath(os.path.join(self.path, '../..'))
         bname = os.path.basename(os.path.dirname(builds))
@@ -133,10 +143,9 @@ class Run(PropsDir):
             '--timeout', str(jobdef.timeout),
             '--container', self.container,
         ]
-        if self.params:
-            for k, v in self.params.items():
-                args.append('--env')
-                args.append('%s=%s' % (k, v))
+        for k, v in self._get_params():
+            args.append('--env')
+            args.append('%s=%s' % (k, v))
         return {
             'stdin': jobdef.script,
             'args': args,
@@ -150,7 +159,7 @@ class Build(object):
     UNKNOWN = 'UNKNOWN'
 
     @classmethod
-    def create(cls, job, runs):
+    def create(cls, job, runs, trigger_data=None):
         """Creates a new Build with an increased build number"""
         path = job._get_builds_dir()
         if not os.path.exists(path):
@@ -169,7 +178,7 @@ class Build(object):
                 os.mkdir(os.path.join(path, str(b)))
                 b = cls(b, p)
                 b.append_to_summary('Build queued')
-                b._create_runs(job, runs)
+                b._create_runs(job, runs, trigger_data)
                 return b
             except FileExistsError:
                 pass
@@ -193,7 +202,11 @@ class Build(object):
         with self.summary_fd() as f:
             return f.read()
 
-    def _create_runs(self, job, runs):
+    def _create_runs(self, job, runs, trigger_data):
+        with open(os.path.join(self.build_dir, 'trigger_data'), 'w') as f:
+            if trigger_data is None:
+                trigger_data = {}
+            json.dump(trigger_data, f)
         path = os.path.join(self.build_dir, 'runs')
         if not os.path.exists(path):
             os.mkdir(path)
@@ -252,6 +265,15 @@ class Build(object):
     @property
     def started_utc(self):
         return datetime.datetime.fromtimestamp(self.started)
+
+    @property
+    def trigger_data(self):
+        try:
+            with open(os.path.join(self.build_dir, 'trigger_data')) as f:
+                return json.load(f)
+        except:
+            log.exception('error loading trigger data')
+            return {}
 
     def list_runs(self):
         return Run.list(os.path.join(self.build_dir, 'runs'))
@@ -435,10 +457,7 @@ class JobDefinition(PropsFile):
 
     def create_build(self, runs, trigger_data=None):
         self._validate_runs(runs)
-        if trigger_data:
-            for run in runs:
-                run['params'].update(trigger_data)
-        return Build.create(self, runs)
+        return Build.create(self, runs, trigger_data)
 
     def rebuild(self, build, user='unknown'):
         runs = []
@@ -448,7 +467,7 @@ class JobDefinition(PropsFile):
                 'params': run.params or {},
                 'container': run.container,
             })
-        b = self.create_build(runs)
+        b = self.create_build(runs, build.trigger_data)
         b.append_to_summary(
             '"%s" triggered rebuild of: %d' % (user, build.number))
         return b
