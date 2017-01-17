@@ -45,6 +45,23 @@ h3 {
     </table>
   </div>
 
+{% if trigger_data %}
+<h3>Triggered by: {{trigger_data.BYA_TRIGGER}}</h3>
+<table class="pure-table pure-table-horizontal pure-table-striped rounded">
+  <thead>
+    <tr><th>Name</th><th>Value</th></tr>
+  </thead>
+  <tbody>
+  {% for k,v in trigger_data.items() %}
+  {% if k != 'BYA_TRIGGER' %}
+    <tr><td>{{k}}</td><td>{{v}}</td></tr>
+  {% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+
 <h3>Runs</h3>
 <table class="pure-table pure-table-horizontal pure-table-striped rounded">
   <thead>

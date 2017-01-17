@@ -120,9 +120,9 @@ class Run(PropsDir):
     def _get_params(self):
         params = {}
         if self.params:
-            for k, v in self.params:
+            for k, v in self.params.items():
                 params[k] = v
-        for k, v in self.get_build().trigger_data:
+        for k, v in self.get_build().trigger_data.items():
             params[k] = v
         return params
 
@@ -143,7 +143,7 @@ class Run(PropsDir):
             '--timeout', str(jobdef.timeout),
             '--container', self.container,
         ]
-        for k, v in self._get_params():
+        for k, v in self._get_params().items():
             args.append('--env')
             args.append('%s=%s' % (k, v))
         return {

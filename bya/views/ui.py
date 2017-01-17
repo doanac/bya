@@ -104,7 +104,8 @@ def build(name, build_num, jobgroup=None):
         return redirect('queues')
 
     return render_template('build.html', jobname=name, jobgroup=jobgroup,
-                           build=build, can_rebuild=can_rebuild)
+                           build=build, trigger_data=build.trigger_data,
+                           can_rebuild=can_rebuild)
 
 
 @app.route('/<name>.job/builds/<int:build_num>/<run>/')
