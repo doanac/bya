@@ -2,6 +2,7 @@
 import argparse
 import sys
 
+from bya.clean import clean_builds
 from bya.daemon import SmartDaemonRunner
 from bya.models import ModelError, jobs
 from bya.views import app
@@ -62,6 +63,10 @@ def _triggers(args):
     runner.do_action()
 
 
+def _clean_builds(args):
+    clean_builds()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Manage BYA application')
@@ -90,6 +95,9 @@ def main():
     p.add_argument('--pid', default='/tmp/bya-triggers.pid')
     p.add_argument('action', choices=('start', 'stop', 'restart', 'status'))
     p.set_defaults(func=_triggers)
+
+    p = sub.add_parser('clean-builds', help='Clean up old builds')
+    p.set_defaults(func=_clean_builds)
 
     args = parser.parse_args()
     if getattr(args, 'func', None):

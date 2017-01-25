@@ -2,7 +2,9 @@ import datetime
 import json
 import os
 import random
+import shutil
 import string
+import tempfile
 
 import yaml
 
@@ -232,6 +234,14 @@ class Build(object):
         NotifyProp.notify_build(jobdef, self, status)
 
     @property
+    def completion_time(self):
+        status_file = os.path.join(self.build_dir, 'status')
+        try:
+            return os.stat(status_file).st_mtime
+        except FileNotFoundError:
+            return 0
+
+    @property
     def status(self):
         status_file = os.path.join(self.build_dir, 'status')
         try:
@@ -280,6 +290,12 @@ class Build(object):
 
     def get_run(self, name):
         return Run.get(self.name, self.number, name)
+
+    def delete(self):
+        tmpdir = tempfile.mkdtemp(dir=settings.DATA_DIR)
+        dst = os.path.join(tmpdir, 'build')
+        os.rename(self.build_dir, dst)
+        shutil.rmtree(tmpdir)
 
     def __repr__(self):
         return 'Build(%d)' % self.number
