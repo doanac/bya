@@ -42,6 +42,12 @@ Each "build" is defined by a job definition which is YAML like:
    - type: email
      users:
      - 1@example.com
+ retention:
+   unit: days  # can be days or builds
+   value: 7    # keep the last 7 days worth of builds
+   # unit: builds
+   # value: 10 # keep the last 10 builds
+
  script: |
    # the contents are executed under a bash shell
    git clone https://myrepo.com/repo

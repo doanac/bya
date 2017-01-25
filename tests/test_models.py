@@ -246,6 +246,32 @@ class TestValidator(ModelTest):
             with open(p) as f:
                 JobDefinition.validate(yaml.load(f.read()))
 
+    def test_retention_good(self):
+        self.jobdef['retention'] = {
+            'unit': 'days',
+            'value': 7,
+        }
+        p = self._write_job('name', self.jobdef)
+        with open(p) as f:
+            JobDefinition.validate(yaml.load(f.read()))
+
+    def test_retention_bad(self):
+        self.jobdef['retention'] = {
+            'unit': 'bad-unit',
+        }
+        p = self._write_job('name', self.jobdef)
+        with self.assertRaisesRegex(ModelError, 'retention unit\(bad-unit\)'):
+            with open(p) as f:
+                JobDefinition.validate(yaml.load(f.read()))
+
+        self.jobdef['retention'] = {
+            'unit': 'days',
+        }
+        p = self._write_job('name', self.jobdef)
+        with self.assertRaisesRegex(ModelError, 'retention value\(None\)'):
+            with open(p) as f:
+                JobDefinition.validate(yaml.load(f.read()))
+
 
 class TestAll(ModelTest):
     def setUp(self):

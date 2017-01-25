@@ -315,6 +315,25 @@ class ParamsProp(Property):
                     'Param(%s) must include a "name" attribute' % v, 400)
 
 
+class RetentionProp(Property):
+    def __init__(self):
+        empty = {}
+        super(RetentionProp, self).__init__('retention', dict, empty, False)
+
+    def validate(self, value):
+        value = super(RetentionProp, self).validate(value)
+        if value:
+            unit = value.get('unit')
+            if unit not in ('days', 'builds'):
+                raise ModelError(
+                    'Invalid retention unit(%s). Must be "days" or "builds"' %
+                    unit)
+            v = value.get('value')
+            if not v or type(v) != int:
+                raise ModelError(
+                    'Invalid retention value(%s). Must be an integer' % v)
+
+
 class JobDefinition(PropsFile):
     """Represents the definition of job that's managed by YAML files under
        settings.JOBS_DIR like:
@@ -329,6 +348,7 @@ class JobDefinition(PropsFile):
         Property('timeout', int),
         Property('script', str),
         Property('secrets', list, required=False),
+        RetentionProp(),
         ContainersProp(),
         ParamsProp(),
         TriggerProp(),
